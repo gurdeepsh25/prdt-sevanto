@@ -54,6 +54,5 @@ router.post(
   validate({ body: resetPasswordSchema }),
   controller.resetPassword,
 );
-router.get("/me", requireAuth, controller.me);
 
 export default router;

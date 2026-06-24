@@ -8,7 +8,6 @@ import {
   verifyEmailSchema,
   resendVerificationSchema,
 } from "./auth.validators.js";
-import type { AuthedRequest } from "../../common/middlewares/auth.js";
 
 const meta = (req: Request) => ({
   userAgent: req.header("user-agent") ?? undefined,
@@ -39,12 +38,10 @@ export async function refresh(req: Request, res: Response, next: NextFunction) {
   try {
     const { refreshToken } = req.body ?? {};
     if (!refreshToken) {
-      res
-        .status(400)
-        .json({
-          success: false,
-          error: { code: "VALIDATION_ERROR", message: "refreshToken required" },
-        });
+      res.status(400).json({
+        success: false,
+        error: { code: "VALIDATION_ERROR", message: "refreshToken required" },
+      });
       return;
     }
     const result = await service.refresh({ refreshToken }, meta(req));
@@ -116,39 +113,6 @@ export async function resetPassword(
     const input = resetPasswordSchema.parse(req.body);
     await service.resetPassword(input);
     res.json({ success: true, data: { ok: true } });
-  } catch (e) {
-    next(e);
-  }
-}
-
-export async function me(
-  req: AuthedRequest,
-  res: Response,
-  next: NextFunction,
-) {
-  try {
-    if (!req.user) {
-      res
-        .status(401)
-        .json({
-          success: false,
-          error: { code: "UNAUTHENTICATED", message: "Auth required" },
-        });
-      return;
-    }
-    const user = await (
-      await import("../../infra/prisma/client.js")
-    ).prisma.user.findUnique({ where: { id: req.user.sub } });
-    if (!user) {
-      res
-        .status(404)
-        .json({
-          success: false,
-          error: { code: "NOT_FOUND", message: "User not found" },
-        });
-      return;
-    }
-    res.json({ success: true, data: { user: service.publicUser(user) } });
   } catch (e) {
     next(e);
   }

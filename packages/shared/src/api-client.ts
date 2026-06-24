@@ -6,6 +6,12 @@ import type {
   ForgotPasswordInput,
   ResetPasswordInput,
   User,
+  Address,
+  UpdateProfileInput,
+  ChangePasswordInput,
+  AddressInput,
+  AdminUserListQuery,
+  PaginatedUsers,
 } from "./types";
 
 /**
@@ -177,10 +183,6 @@ export class ApiClient {
     });
   }
 
-  me(): Promise<{ user: User }> {
-    return this.request<{ user: User }>("/api/v1/auth/me");
-  }
-
   forgotPassword(input: ForgotPasswordInput): Promise<{ ok: true }> {
     return this.request<{ ok: true }>("/api/v1/auth/forgot-password", {
       method: "POST",
@@ -211,6 +213,107 @@ export class ApiClient {
       method: "POST",
       body: JSON.stringify({ email }),
       auth: false,
+    });
+  }
+
+  // =====================================================
+  // User profile endpoints (Phase 2)
+  // =====================================================
+  getMe(): Promise<{ user: User }> {
+    return this.request<{ user: User }>("/api/v1/users/me");
+  }
+
+  updateProfile(input: UpdateProfileInput): Promise<{ user: User }> {
+    return this.request<{ user: User }>("/api/v1/users/me", {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    });
+  }
+
+  changePassword(input: ChangePasswordInput): Promise<{ ok: true }> {
+    return this.request<{ ok: true }>("/api/v1/users/me/password", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  deleteAccount(refreshToken?: string): Promise<{ ok: true }> {
+    return this.request<{ ok: true }>("/api/v1/users/me/delete", {
+      method: "POST",
+      body: JSON.stringify(refreshToken ? { refreshToken } : {}),
+    });
+  }
+
+  avatarUploadTicket(): Promise<{
+    key: string;
+    url: string;
+    expiresAt: string;
+  }> {
+    return this.request<{ key: string; url: string; expiresAt: string }>(
+      "/api/v1/users/me/avatar",
+      { method: "POST" },
+    );
+  }
+
+  // =====================================================
+  // Address endpoints (Phase 2)
+  // =====================================================
+  listAddresses(): Promise<{ items: Address[] }> {
+    return this.request<{ items: Address[] }>("/api/v1/users/me/addresses");
+  }
+
+  createAddress(input: AddressInput): Promise<{ address: Address }> {
+    return this.request<{ address: Address }>("/api/v1/users/me/addresses", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  updateAddress(
+    id: string,
+    input: Partial<AddressInput>,
+  ): Promise<{ address: Address }> {
+    return this.request<{ address: Address }>(
+      `/api/v1/users/me/addresses/${id}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(input),
+      },
+    );
+  }
+
+  deleteAddress(id: string): Promise<{ ok: true }> {
+    return this.request<{ ok: true }>(`/api/v1/users/me/addresses/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  // =====================================================
+  // Admin endpoints (Phase 2)
+  // =====================================================
+  adminListUsers(query: AdminUserListQuery = {}): Promise<PaginatedUsers> {
+    const params = new URLSearchParams();
+    if (query.page) params.set("page", String(query.page));
+    if (query.pageSize) params.set("pageSize", String(query.pageSize));
+    if (query.role) params.set("role", query.role);
+    if (query.status) params.set("status", query.status);
+    if (query.search) params.set("search", query.search);
+    if (query.sort) params.set("sort", query.sort);
+    const qs = params.toString();
+    return this.request<PaginatedUsers>(`/api/v1/users${qs ? `?${qs}` : ""}`);
+  }
+
+  adminGetUser(id: string): Promise<{ user: User }> {
+    return this.request<{ user: User }>(`/api/v1/users/${id}`);
+  }
+
+  adminUpdateUser(
+    id: string,
+    input: { isActive?: boolean },
+  ): Promise<{ user: User }> {
+    return this.request<{ user: User }>(`/api/v1/users/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
     });
   }
 }

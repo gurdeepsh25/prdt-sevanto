@@ -9,7 +9,7 @@ extendZodWithOpenApi(z);
 
 export const registry = new OpenAPIRegistry();
 
-// Register the User schema for /auth/me
+// Register the User schema for /users/me
 export const UserSchema = z
   .object({
     id: z
@@ -18,11 +18,31 @@ export const UserSchema = z
       .openapi({ example: "6f0a4b3a-5a1f-4d8e-b7c3-2a7f3b9d2c10" }),
     email: z.string().email(),
     fullName: z.string(),
+    phone: z.string().nullable().optional(),
+    avatarUrl: z.string().url().nullable().optional(),
     role: z.enum(["CUSTOMER", "WORKER", "ADMIN"]),
+    isActive: z.boolean().optional(),
     isEmailVerified: z.boolean(),
     createdAt: z.string().datetime(),
   })
   .openapi("User");
+
+export const AddressSchema = z
+  .object({
+    id: z.string().uuid(),
+    label: z.string().nullable(),
+    line1: z.string(),
+    line2: z.string().nullable(),
+    city: z.string(),
+    state: z.string(),
+    postalCode: z.string(),
+    country: z.string(),
+    lat: z.number().nullable(),
+    lng: z.number().nullable(),
+    isDefault: z.boolean(),
+    createdAt: z.string().datetime(),
+  })
+  .openapi("Address");
 
 export const TokensSchema = z
   .object({
@@ -207,6 +227,21 @@ registry.registerPath({
 
 registry.registerPath({
   method: "post",
+  path: "/auth/resend-verification",
+  summary: "Resend verification email",
+  tags: ["Auth"],
+  request: {
+    body: {
+      content: {
+        "application/json": { schema: z.object({ email: z.string().email() }) },
+      },
+    },
+  },
+  responses: { 200: { description: "OK" } },
+});
+
+registry.registerPath({
+  method: "post",
   path: "/auth/forgot-password",
   summary: "Send password reset link",
   tags: ["Auth"],
@@ -237,11 +272,21 @@ registry.registerPath({
   responses: { 200: { description: "OK" } },
 });
 
+registry.registerComponent("securitySchemes", "bearerAuth", {
+  type: "http",
+  scheme: "bearer",
+  bearerFormat: "JWT",
+});
+
+// =====================================================
+// Phase 2 � User Management endpoints
+// =====================================================
+
 registry.registerPath({
   method: "get",
-  path: "/auth/me",
-  summary: "Get current authenticated user",
-  tags: ["Auth"],
+  path: "/users/me",
+  summary: "Get current user",
+  tags: ["Users"],
   security: [{ bearerAuth: [] }],
   responses: {
     200: {
@@ -255,8 +300,161 @@ registry.registerPath({
   },
 });
 
-registry.registerComponent("securitySchemes", "bearerAuth", {
-  type: "http",
-  scheme: "bearer",
-  bearerFormat: "JWT",
+registry.registerPath({
+  method: "patch",
+  path: "/users/me",
+  summary: "Update current user's profile",
+  tags: ["Users"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            fullName: z.string().min(2).max(120).optional(),
+            phone: z.string().nullable().optional(),
+            avatarUrl: z.string().url().nullable().optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: { 200: { description: "OK" } },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/users/me/password",
+  summary: "Change password",
+  tags: ["Users"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            currentPassword: z.string(),
+            newPassword: z.string().min(8),
+          }),
+        },
+      },
+    },
+  },
+  responses: { 200: { description: "OK" } },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/users/me/delete",
+  summary: "Soft-delete the current user account",
+  tags: ["Users"],
+  security: [{ bearerAuth: [] }],
+  responses: { 200: { description: "OK" } },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/users/me/avatar",
+  summary: "Issue avatar upload ticket (pre-signed URL)",
+  tags: ["Users"],
+  security: [{ bearerAuth: [] }],
+  responses: { 200: { description: "OK" } },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/users/me/addresses",
+  summary: "List current user's addresses",
+  tags: ["Addresses"],
+  security: [{ bearerAuth: [] }],
+  responses: { 200: { description: "OK" } },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/users/me/addresses",
+  summary: "Create a new address",
+  tags: ["Addresses"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: AddressSchema.partial({ id: true, createdAt: true }),
+        },
+      },
+    },
+  },
+  responses: { 201: { description: "Created" } },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/users/me/addresses/{id}",
+  summary: "Update an address",
+  tags: ["Addresses"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: z.object({ id: z.string().uuid() }),
+    body: {
+      content: { "application/json": { schema: AddressSchema.partial() } },
+    },
+  },
+  responses: { 200: { description: "OK" } },
+});
+
+registry.registerPath({
+  method: "delete",
+  path: "/users/me/addresses/{id}",
+  summary: "Delete an address",
+  tags: ["Addresses"],
+  security: [{ bearerAuth: [] }],
+  request: { params: z.object({ id: z.string().uuid() }) },
+  responses: { 200: { description: "OK" } },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/users",
+  summary: "Admin: list users",
+  tags: ["Admin"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    query: z.object({
+      page: z.number().optional(),
+      pageSize: z.number().optional(),
+      role: z.string().optional(),
+      status: z.string().optional(),
+      search: z.string().optional(),
+      sort: z.string().optional(),
+    }),
+  },
+  responses: { 200: { description: "OK" } },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/users/{id}",
+  summary: "Admin: get user detail",
+  tags: ["Admin"],
+  security: [{ bearerAuth: [] }],
+  request: { params: z.object({ id: z.string().uuid() }) },
+  responses: { 200: { description: "OK" } },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/users/{id}",
+  summary: "Admin: suspend or reactivate a user",
+  tags: ["Admin"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: z.object({ id: z.string().uuid() }),
+    body: {
+      content: {
+        "application/json": { schema: z.object({ isActive: z.boolean() }) },
+      },
+    },
+  },
+  responses: { 200: { description: "OK" } },
 });

@@ -10,27 +10,27 @@
 
 ## Phase Status Overview
 
-| Phase | Title                            | Status      | Started    | Completed  |
-| ----: | -------------------------------- | ----------- | ---------- | ---------- |
-|     0 | Documentation & Planning         | Completed   | —          | 2026-06-24 |
-|     1 | Authentication                   | Completed   | 2026-06-24 | 2026-06-24 |
-|     2 | User Management                  | In Progress | 2026-06-24 | —          |
-|     3 | Worker Profiles                  | Pending     | —          | —          |
-|     4 | Job Categories                   | Pending     | —          | —          |
-|     5 | Job Posting                      | Pending     | —          | —          |
-|     6 | Job Discovery                    | Pending     | —          | —          |
-|     7 | Job Applications                 | Pending     | —          | —          |
-|     8 | Job Assignment                   | Pending     | —          | —          |
-|     9 | Job Lifecycle                    | Pending     | —          | —          |
-|    10 | Reviews & Ratings                | Pending     | —          | —          |
-|    11 | Notifications                    | Pending     | —          | —          |
-|    12 | Search & Filters                 | Pending     | —          | —          |
-|    13 | Admin Dashboard                  | Pending     | —          | —          |
-|    14 | Reports & Analytics              | Pending     | —          | —          |
-|    15 | Chat System (future)             | Pending     | —          | —          |
-|    16 | Maps & Location (future)         | Pending     | —          | —          |
-|    17 | Payments & Monetization (future) | Pending     | —          | —          |
-|    18 | Production Launch (future)       | Pending     | —          | —          |
+| Phase | Title                            | Status    | Started    | Completed  |
+| ----: | -------------------------------- | --------- | ---------- | ---------- |
+|     0 | Documentation & Planning         | Completed | —          | 2026-06-24 |
+|     1 | Authentication                   | Completed | 2026-06-24 | 2026-06-24 |
+|     2 | User Management                  | Completed | 2026-06-24 | 2026-06-24 |
+|     3 | Worker Profiles                  | Pending   | —          | —          |
+|     4 | Job Categories                   | Pending   | —          | —          |
+|     5 | Job Posting                      | Pending   | —          | —          |
+|     6 | Job Discovery                    | Pending   | —          | —          |
+|     7 | Job Applications                 | Pending   | —          | —          |
+|     8 | Job Assignment                   | Pending   | —          | —          |
+|     9 | Job Lifecycle                    | Pending   | —          | —          |
+|    10 | Reviews & Ratings                | Pending   | —          | —          |
+|    11 | Notifications                    | Pending   | —          | —          |
+|    12 | Search & Filters                 | Pending   | —          | —          |
+|    13 | Admin Dashboard                  | Pending   | —          | —          |
+|    14 | Reports & Analytics              | Pending   | —          | —          |
+|    15 | Chat System (future)             | Pending   | —          | —          |
+|    16 | Maps & Location (future)         | Pending   | —          | —          |
+|    17 | Payments & Monetization (future) | Pending   | —          | —          |
+|    18 | Production Launch (future)       | Pending   | —          | —          |
 
 ## Phase 0 — Documentation & Planning
 
@@ -43,6 +43,53 @@
 | 0.5 | Approval gate (wait for sign-off before any code) | —     | Completed |
 
 ## Active Phase
+
+### ✅ Phase 2 — User Management — Completed 2026-06-24
+
+| ID   | Task                                                                 | Component      | Status    |
+| ---- | -------------------------------------------------------------------- | -------------- | --------- |
+| 2.1  | Add `phone`, `avatarUrl`, `deletedAt` to `User`; add `UserAddress`   | server/db      | Completed |
+| 2.2  | Prisma migration + `npx prisma generate`                             | server/db      | Completed |
+| 2.3  | `users.service.ts` — getMe, updateMe, changePassword, softDelete     | server/api     | Completed |
+| 2.4  | `addresses.service.ts` — CRUD (with default-address promotion)       | server/api     | Completed |
+| 2.5  | `users.validators.ts` (Zod schemas)                                  | server/api     | Completed |
+| 2.6  | Controllers + routes (`/api/v1/users/*`)                             | server/api     | Completed |
+| 2.7  | Admin endpoints: list users, get/suspend/reactivate                  | server/api     | Completed |
+| 2.8  | Soft-delete: anonymize PII + revoke refresh tokens + Redis denylist  | server/api     | Completed |
+| 2.9  | Avatar upload endpoint (ticket contract)                             | server/api     | Completed |
+| 2.10 | OpenAPI registration for new endpoints                               | server/openapi | Completed |
+| 2.11 | Unit tests: 19 new validator tests (42/42 pass total)                | server/tests   | Completed |
+| 2.12 | Customer app: `/profile` + addresses CRUD + change-password + delete | client         | Completed |
+| 2.13 | Worker app: `/profile` + change-password + delete                    | worker         | Completed |
+| 2.14 | Admin app: `/users` list + `/users/[id]` detail + suspend action     | admin          | Completed |
+| 2.15 | Build + typecheck all packages green                                 | all            | Completed |
+| 2.16 | Phase 2 tracker marked Completed                                     | docs           | Completed |
+
+### Verification (all green)
+
+| Check                                        | Result                                               |
+| -------------------------------------------- | ---------------------------------------------------- |
+| `prisma generate`                            | ✅ User fields + UserAddress compiled                |
+| `npm run typecheck` (server, shared, 3 apps) | ✅ no errors                                         |
+| `npm run build` (server)                     | ✅ compiles to `dist/`                               |
+| `npm run build` (client)                     | ✅ 12 routes prerendered                             |
+| `npm run build` (worker)                     | ✅ 12 routes prerendered                             |
+| `npm run build` (admin)                      | ✅ 7 routes prerendered (with dynamic `/users/[id]`) |
+| `npm run test:unit` (server)                 | ✅ **42 / 42** tests pass                            |
+
+| ID   | Task                                                               | Component      | Status      |
+| ---- | ------------------------------------------------------------------ | -------------- | ----------- |
+| 2.1  | Add `phone`, `avatarUrl`, `deletedAt` to `User`; add `UserAddress` | server/db      | In Progress |
+| 2.2  | Prisma migration (`002_user_management`)                           | server/db      | Pending     |
+| 2.3  | `users.service.ts` — getMe, updateMe, changePassword, softDelete   | server/api     | Pending     |
+| 2.4  | `addresses.service.ts` — CRUD                                      | server/api     | Pending     |
+| 2.5  | `users.validators.ts` (Zod schemas)                                | server/api     | Pending     |
+| 2.6  | Controllers + routes (`/api/v1/users/*`)                           | server/api     | Pending     |
+| 2.7  | Admin module: list users, get/suspend/reactivate                   | server/admin   | Pending     |
+| 2.8  | Soft-delete: anonymize PII + revoke refresh tokens                 | server/api     | Pending     |
+| 2.9  | Avatar upload endpoint (returns key + URL to client)               | server/api     | Pending     |
+| 2.10 | OpenAPI registration for new endpoints                             | server/openapi | Pending     |
+| 2.11 | Unit tests (validators)                                            | server/tests   | Pending     |
 
 ### ✅ Phase 1 — Authentication — Completed 2026-06-24
 
@@ -103,5 +150,12 @@
 ## Change Log
 
 - 2026-06-24 — Initial roadmap + 26 planning docs + 15 architecture evaluation docs.
-- 2026-06-24 — **Phase 1 backend complete**: Prisma schema, full auth module (signup/login/refresh/logout/verify/forgot/reset/resend), middleware stack, OpenAPI, email service, Redis throttling, 23 passing unit tests, full build + typecheck green.
-- 2026-06-24 — **Phase 1 frontends complete**: `packages/shared` workspace (types, validators, API client, auth store). Three Next.js 14 apps (Customer, Worker, Admin) with all 5 auth pages each (Customer/Worker) or login (Admin), landing pages, dashboards, Tailwind, Suspense boundaries, role enforcement. All three apps build and typecheck green. **Phase 1 marked Completed.**
+- 2026-06-24 — **Phase 1 complete**: backend + 3 Next.js apps (Customer, Worker, Admin) with auth pages.
+- 2026-06-24 — **Phase 2 complete**: user profile + addresses CRUD + change password + soft-delete; admin user management (list, detail, suspend/reactivate). 42/42 tests pass. All 3 apps build green.
+- 2026-06-24 — **Audit & cleanup**:
+  - Removed dead `/auth/me` route + `me` controller + import (canonical endpoint is `/users/me` per Phase 2 spec).
+  - Removed orphaned `/auth/me` OpenAPI registration.
+  - Added missing `/auth/resend-verification` OpenAPI registration.
+  - Verified endpoint coverage: **20/20** spec endpoints implemented (8 auth + 12 user).
+  - Verified runtime: server boots, `/healthz` 200, `/openapi.json` 200 (17 paths), 404 envelope correct.
+  - Cleaned duplicate Phase 2 task table in tracker.

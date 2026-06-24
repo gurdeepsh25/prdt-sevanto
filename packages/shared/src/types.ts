@@ -9,9 +9,67 @@ export interface User {
   id: string;
   email: string;
   fullName: string;
+  phone: string | null;
+  avatarUrl: string | null;
   role: Role;
+  isActive: boolean;
   isEmailVerified: boolean;
   createdAt: string;
+}
+
+export interface Address {
+  id: string;
+  label: string | null;
+  line1: string;
+  line2: string | null;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  lat: number | null;
+  lng: number | null;
+  isDefault: boolean;
+  createdAt: string;
+}
+
+export interface UpdateProfileInput {
+  fullName?: string;
+  phone?: string | null;
+  avatarUrl?: string | null;
+}
+
+export interface ChangePasswordInput {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface AddressInput {
+  label?: string | null;
+  line1: string;
+  line2?: string | null;
+  city: string;
+  state: string;
+  postalCode: string;
+  country?: string;
+  lat?: number | null;
+  lng?: number | null;
+  isDefault?: boolean;
+}
+
+export interface AdminUserListQuery {
+  page?: number;
+  pageSize?: number;
+  role?: Role;
+  status?: "active" | "suspended";
+  search?: string;
+  sort?: "createdAt:asc" | "createdAt:desc" | "fullName:asc" | "fullName:desc";
+}
+
+export interface PaginatedUsers {
+  items: User[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface AuthTokens {

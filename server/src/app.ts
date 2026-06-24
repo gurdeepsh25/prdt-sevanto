@@ -10,6 +10,7 @@ import { logger } from "./infra/logger/logger.js";
 import { errorHandler, notFoundHandler } from "./common/middlewares/error.js";
 import { rateLimiter } from "./common/middlewares/rateLimit.js";
 import authRouter from "./modules/auth/auth.routes.js";
+import usersRouter from "./modules/users/users.routes.js";
 import healthRouter from "./modules/health.routes.js";
 import { buildOpenApiDocument } from "./openapi/registry.js";
 
@@ -76,6 +77,7 @@ export function createApp(): Express {
 
   // Versioned API
   app.use("/api/v1/auth", authRouter);
+  app.use("/api/v1/users", usersRouter);
 
   // 404 + error handlers last
   app.use(notFoundHandler);
