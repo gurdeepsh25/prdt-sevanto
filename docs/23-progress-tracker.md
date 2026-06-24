@@ -15,7 +15,7 @@
 |     0 | Documentation & Planning         | Completed | —          | 2026-06-24 |
 |     1 | Authentication                   | Completed | 2026-06-24 | 2026-06-24 |
 |     2 | User Management                  | Completed | 2026-06-24 | 2026-06-24 |
-|     3 | Worker Profiles                  | Pending   | —          | —          |
+|     3 | Worker Profiles                  | Completed | 2026-06-24 | 2026-06-24 |
 |     4 | Job Categories                   | Pending   | —          | —          |
 |     5 | Job Posting                      | Pending   | —          | —          |
 |     6 | Job Discovery                    | Pending   | —          | —          |
@@ -43,6 +43,37 @@
 | 0.5 | Approval gate (wait for sign-off before any code) | —     | Completed |
 
 ## Active Phase
+
+### ✅ Phase 3 — Worker Profiles — Completed 2026-06-24
+
+| ID   | Task                                                                    | Component      | Status    |
+| ---- | ----------------------------------------------------------------------- | -------------- | --------- |
+| 3.1  | Prisma: add Skill + WorkerProfile + WorkerSkill + PortfolioItem models  | server/db      | Completed |
+| 3.2  | Migration (`003_worker_profiles`) + `prisma generate`                   | server/db      | Completed |
+| 3.3  | `workers.validators.ts` (Zod schemas)                                   | server/api     | Completed |
+| 3.4  | `workers.service.ts` — profile CRUD + skills + portfolio + completeness | server/api     | Completed |
+| 3.5  | `workers.controller.ts` + routes (`/api/v1/workers/*`)                  | server/api     | Completed |
+| 3.6  | Admin verify endpoint                                                   | server/api     | Completed |
+| 3.7  | OpenAPI registration for new endpoints                                  | server/openapi | Completed |
+| 3.8  | Unit tests (validators + completeness)                                  | server/tests   | Completed |
+| 3.9  | Customer app: `/workers` list + `/workers/:id` detail                   | client         | Completed |
+| 3.10 | Worker app: `/profile` (worker fields) + `/skills` + `/portfolio`       | worker         | Completed |
+| 3.11 | Admin app: `/workers/pending` queue + verify/reject actions             | admin          | Completed |
+| 3.12 | Build + typecheck all packages green                                    | all            | Completed |
+| 3.13 | Mark Phase 3 Completed                                                  | docs           | Completed |
+
+### Verification (all green)
+
+| Check                                         | Result                                                                              |
+| --------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `prisma generate`                             | ✅ WorkerProfile + Skill + WorkerSkill + PortfolioItem compiled                     |
+| `npm run typecheck` (server, shared, 3 apps)  | ✅ no errors                                                                        |
+| `npm run build` (server)                      | ✅ compiles to `dist/`                                                              |
+| `npm run build` (client)                      | ✅ 13 routes (incl. `/workers`, `/workers/[id]`)                                    |
+| `npm run build` (worker)                      | ✅ 14 routes (incl. `/profile`, `/skills`, `/portfolio`)                            |
+| `npm run build` (admin)                       | ✅ 8 routes (incl. `/workers/pending`)                                              |
+| `npm run test:unit` (server)                  | ✅ **73 / 73** tests pass (31 new for Phase 3)                                      |
+| Endpoint audit (`scripts/audit-endpoints.js`) | ✅ **32 / 32** endpoints implemented (Phase 1: 8/8, Phase 2: 12/12, Phase 3: 12/12) |
 
 ### ✅ Phase 2 — User Management — Completed 2026-06-24
 
@@ -159,3 +190,4 @@
   - Verified endpoint coverage: **20/20** spec endpoints implemented (8 auth + 12 user).
   - Verified runtime: server boots, `/healthz` 200, `/openapi.json` 200 (17 paths), 404 envelope correct.
   - Cleaned duplicate Phase 2 task table in tracker.
+- 2026-06-24 — **Phase 3 complete**: backend (12 worker endpoints + Skill catalog + admin verify queue) + 3 frontends (customer `/workers` list + detail, worker `/profile` + `/skills` + `/portfolio`, admin `/workers/pending`). 73/73 unit tests pass. Endpoint audit shows 32/32 implemented (12 new worker routes added).

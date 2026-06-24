@@ -144,3 +144,167 @@ export interface ResetPasswordInput {
   token: string;
   password: string;
 }
+
+// =====================================================
+// Phase 3 — Worker Profiles
+// =====================================================
+
+export type SkillLevel = "BEGINNER" | "INTERMEDIATE" | "EXPERT";
+
+export interface SkillRef {
+  id: string;
+  name: string;
+}
+
+export interface WorkerSkillRef {
+  name: string;
+  level: SkillLevel;
+}
+
+export interface WorkerPortfolioItem {
+  id: string;
+  imageUrl: string;
+  caption: string | null;
+}
+
+export interface PublicWorkerCard {
+  id: string;
+  userId: string;
+  fullName: string;
+  headline: string;
+  city: string;
+  avgRating: number;
+  totalReviews: number;
+  totalJobsCompleted: number;
+  isVerified: boolean;
+  hourlyRate: number | null;
+  yearsExperience: number;
+  skills: WorkerSkillRef[];
+}
+
+export interface PublicWorkerDetail extends PublicWorkerCard {
+  bio: string;
+  serviceRadiusKm: number;
+  portfolio: WorkerPortfolioItem[];
+}
+
+export interface PublicWorkerList {
+  items: PublicWorkerCard[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface PublicWorkerListQuery {
+  page?: number;
+  pageSize?: number;
+  city?: string;
+  skill?: string;
+  minRating?: number;
+  verifiedOnly?: boolean;
+  sort?:
+    | "avgRating:desc"
+    | "avgRating:asc"
+    | "createdAt:desc"
+    | "createdAt:asc"
+    | "yearsExperience:desc"
+    | "yearsExperience:asc";
+}
+
+export interface WorkerProfileCore {
+  headline: string;
+  bio: string;
+  yearsExperience: number;
+  hourlyRate: number | null;
+  city: string;
+  serviceRadiusKm: number;
+}
+
+export interface WorkerPortfolioInput {
+  imageUrl: string;
+  caption?: string | null;
+  sortOrder?: number;
+}
+
+export interface WorkerSkillInput {
+  skillId: string;
+  level: SkillLevel;
+}
+
+export interface UpsertSkillsInput {
+  skills: WorkerSkillInput[];
+}
+
+export interface MyWorkerSkill {
+  id: string;
+  name: string;
+  level: SkillLevel;
+}
+
+export interface MyWorkerPortfolioItem {
+  id: string;
+  imageUrl: string;
+  caption: string | null;
+  sortOrder: number;
+}
+
+export interface MyWorkerProfile {
+  id: string;
+  userId: string;
+  headline: string;
+  bio: string;
+  yearsExperience: number;
+  hourlyRate: number | null;
+  city: string;
+  serviceRadiusKm: number;
+  isVerified: boolean;
+  verifiedAt: string | null;
+  avgRating: number;
+  totalJobsCompleted: number;
+  totalReviews: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MyWorkerProfileResponse {
+  profile: MyWorkerProfile;
+  completeness: number; // 0..100
+  skills: MyWorkerSkill[];
+  portfolio: MyWorkerPortfolioItem[];
+}
+
+export interface SkillCatalogItem {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export interface SkillCatalog {
+  items: SkillCatalogItem[];
+}
+
+export interface PendingWorkerQueueItem {
+  profileId: string;
+  userId: string;
+  fullName: string;
+  email: string;
+  headline: string;
+  city: string;
+  yearsExperience: number;
+  hourlyRate: number | null;
+  createdAt: string;
+  skillsCount: number;
+  portfolioCount: number;
+  completeness: number;
+}
+
+export interface PendingWorkerQueue {
+  items: PendingWorkerQueueItem[];
+}
+
+export interface PendingWorkerQuery {
+  page?: number;
+  pageSize?: number;
+  city?: string;
+  search?: string;
+}

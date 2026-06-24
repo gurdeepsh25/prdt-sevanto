@@ -10,8 +10,7 @@ import { logger } from "./infra/logger/logger.js";
 import { errorHandler, notFoundHandler } from "./common/middlewares/error.js";
 import { rateLimiter } from "./common/middlewares/rateLimit.js";
 import authRouter from "./modules/auth/auth.routes.js";
-import usersRouter from "./modules/users/users.routes.js";
-import healthRouter from "./modules/health.routes.js";
+import usersRouter from "./modules/users/users.routes.js";import workersRouter, { adminRouter as workersAdminRouter, skillsRouter as workersSkillsRouter } from './modules/workers/workers.routes.js';import healthRouter from "./modules/health.routes.js";
 import { buildOpenApiDocument } from "./openapi/registry.js";
 
 export function createApp(): Express {
@@ -78,6 +77,9 @@ export function createApp(): Express {
   // Versioned API
   app.use("/api/v1/auth", authRouter);
   app.use("/api/v1/users", usersRouter);
+  app.use("/api/v1/workers", workersRouter);
+  app.use("/api/v1/admin/workers", workersAdminRouter);
+  app.use("/api/v1/skills", workersSkillsRouter);
 
   // 404 + error handlers last
   app.use(notFoundHandler);

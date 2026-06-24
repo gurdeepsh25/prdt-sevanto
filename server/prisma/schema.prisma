@@ -26,23 +26,24 @@ enum Role {
 // =====================================================
 
 model User {
-  id             String    @id @default(uuid()) @db.Uuid
-  email          String    @unique @db.Citext
-  passwordHash   String    @map("password_hash")
-  role           Role
-  fullName       String    @map("full_name")
-  phone          String?
-  avatarUrl      String?   @map("avatar_url")
-  isActive       Boolean   @default(true) @map("is_active")
-  isEmailVerified Boolean  @default(false) @map("is_email_verified")
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
-  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(3)
+  id              String    @id @default(uuid()) @db.Uuid
+  email           String    @unique @db.Citext
+  passwordHash    String    @map("password_hash")
+  role            Role
+  fullName        String    @map("full_name")
+  phone           String?
+  avatarUrl       String?   @map("avatar_url")
+  isActive        Boolean   @default(true) @map("is_active")
+  isEmailVerified Boolean   @default(false) @map("is_email_verified")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(3)
 
-  refreshTokens        RefreshToken[]
-  passwordResets       PasswordReset[]
-  emailVerifications   EmailVerification[]
-  addresses            UserAddress[]
+  refreshTokens      RefreshToken[]
+  passwordResets     PasswordReset[]
+  emailVerifications EmailVerification[]
+  addresses          UserAddress[]
+  workerProfile      WorkerProfile?
 
   @@index([role])
   @@map("users")
@@ -55,7 +56,7 @@ model User {
 model UserAddress {
   id         String   @id @default(uuid()) @db.Uuid
   userId     String   @map("user_id") @db.Uuid
-  label      String?  // e.g. "Home", "Office"
+  label      String? // e.g. "Home", "Office"
   line1      String
   line2      String?
   city       String
@@ -130,4 +131,95 @@ model EmailVerification {
 
   @@index([userId])
   @@map("email_verifications")
+}
+
+// =====================================================
+// Worker Profile (Phase 3)
+// =====================================================
+
+model WorkerProfile {
+  id                 String    @id @default(uuid()) @db.Uuid
+  userId             String    @unique @map("user_id") @db.Uuid
+  headline           String
+  bio                String    @db.Text
+  yearsExperience    Int       @default(0) @map("years_experience")
+  hourlyRate         Int?      @map("hourly_rate") // minor units (e.g. paise/cents)
+  city               String
+  serviceRadiusKm    Int       @default(10) @map("service_radius_km")
+  isVerified         Boolean   @default(false) @map("is_verified")
+  verifiedAt         DateTime? @map("verified_at") @db.Timestamptz(3)
+  avgRating          Float     @default(0) @map("avg_rating")
+  totalJobsCompleted Int       @default(0) @map("total_jobs_completed")
+  totalReviews       Int       @default(0) @map("total_reviews")
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skills    WorkerSkill[]
+  portfolio PortfolioItem[]
+
+  @@index([isVerified])
+  @@index([city])
+  @@index([avgRating])
+  @@map("worker_profiles")
+}
+
+// =====================================================
+// Skill catalog (Phase 3 � top-level skills; Phase 4
+// will add optional Category relation)
+// =====================================================
+
+model Skill {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  slug      String   @unique
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  workers WorkerSkill[]
+
+  @@map("skills")
+}
+
+// =====================================================
+// Worker-Skill junction (with level)
+// =====================================================
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  EXPERT
+}
+
+model WorkerSkill {
+  id              String     @id @default(uuid()) @db.Uuid
+  workerProfileId String     @map("worker_profile_id") @db.Uuid
+  skillId         String     @map("skill_id") @db.Uuid
+  level           SkillLevel @default(INTERMEDIATE)
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  worker WorkerProfile @relation(fields: [workerProfileId], references: [id], onDelete: Cascade)
+  skill  Skill         @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([workerProfileId, skillId])
+  @@index([skillId])
+  @@map("worker_skills")
+}
+
+// =====================================================
+// Portfolio image metadata
+// =====================================================
+
+model PortfolioItem {
+  id              String   @id @default(uuid()) @db.Uuid
+  workerProfileId String   @map("worker_profile_id") @db.Uuid
+  imageUrl        String   @map("image_url")
+  caption         String?
+  sortOrder       Int      @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  worker WorkerProfile @relation(fields: [workerProfileId], references: [id], onDelete: Cascade)
+
+  @@index([workerProfileId])
+  @@map("portfolio_items")
 }

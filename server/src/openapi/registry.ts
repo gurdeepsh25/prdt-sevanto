@@ -458,3 +458,174 @@ registry.registerPath({
   },
   responses: { 200: { description: "OK" } },
 });
+
+// =====================================================
+// Phase 3 � Worker Profiles
+// =====================================================
+
+registry.registerPath({
+  method: "get",
+  path: "/workers",
+  summary: "Public: list workers (search & filter)",
+  tags: ["Workers"],
+  request: { query: z.object({ page: z.number().optional(), pageSize: z.number().optional(), city: z.string().optional(), skill: z.string().optional(), minRating: z.number().optional(), verifiedOnly: z.boolean().optional(), sort: z.string().optional() }) },
+  responses: { 200: { description: "OK" } },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/workers/{id}",
+  summary: "Public: worker detail",
+  tags: ["Workers"],
+  request: { params: z.object({ id: z.string().uuid() }) },
+  responses: { 200: { description: "OK" } },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/workers/me",
+  summary: "Worker: get my profile",
+  tags: ["Workers"],
+  security: [{ bearerAuth: [] }],
+  responses: { 200: { description: "OK" } },
+});
+
+registry.registerPath({
+  method: "put",
+  path: "/workers/me",
+  summary: "Worker: create or replace my profile",
+  tags: ["Workers"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            headline: z.string().min(5).max(100),
+            bio: z.string().min(10).max(2000),
+            yearsExperience: z.number().int().min(0).max(70),
+            hourlyRate: z.number().int().nonnegative().nullable().optional(),
+            city: z.string().min(1).max(80),
+            serviceRadiusKm: z.number().int().min(1).max(100),
+          }),
+        },
+      },
+    },
+  },
+  responses: { 200: { description: "OK" } },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/workers/me",
+  summary: "Worker: partial profile update",
+  tags: ["Workers"],
+  security: [{ bearerAuth: [] }],
+  responses: { 200: { description: "OK" } },
+});
+
+registry.registerPath({
+  method: "put",
+  path: "/workers/me/skills",
+  summary: "Worker: replace my skills list",
+  tags: ["Workers"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({ skills: z.array(z.object({ skillId: z.string().uuid(), level: z.enum(["BEGINNER", "INTERMEDIATE", "EXPERT"]) })) }),
+        },
+      },
+    },
+  },
+  responses: { 200: { description: "OK" } },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/workers/me/portfolio",
+  summary: "Worker: list my portfolio items",
+  tags: ["Workers"],
+  security: [{ bearerAuth: [] }],
+  responses: { 200: { description: "OK" } },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/workers/me/portfolio",
+  summary: "Worker: add portfolio item",
+  tags: ["Workers"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            imageUrl: z.string().url(),
+            caption: z.string().max(280).nullable().optional(),
+            sortOrder: z.number().int().min(0).max(1000).optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: { 201: { description: "Created" } },
+});
+
+registry.registerPath({
+  method: "delete",
+  path: "/workers/me/portfolio/{id}",
+  summary: "Worker: delete portfolio item",
+  tags: ["Workers"],
+  security: [{ bearerAuth: [] }],
+  request: { params: z.object({ id: z.string().uuid() }) },
+  responses: { 200: { description: "OK" } },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/skills",
+  summary: "Public: list active skill catalog",
+  tags: ["Workers"],
+  responses: {
+    200: {
+      description: "OK",
+      content: {
+        "application/json": {
+          schema: z.object({
+            items: z.array(z.object({ id: z.string().uuid(), name: z.string(), slug: z.string() })),
+          }),
+        },
+      },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/admin/workers/pending",
+  summary: "Admin: list workers pending verification",
+  tags: ["Admin"],
+  security: [{ bearerAuth: [] }],
+  responses: { 200: { description: "OK" } },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/admin/workers/{id}/verify",
+  summary: "Admin: set worker verified / unverified",
+  tags: ["Admin"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: z.object({ id: z.string().uuid() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({ isVerified: z.boolean(), reason: z.string().max(280).optional() }),
+        },
+      },
+    },
+  },
+  responses: { 200: { description: "OK" } },
+});

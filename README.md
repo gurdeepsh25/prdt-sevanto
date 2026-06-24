@@ -15,6 +15,7 @@
 - [Quick Start](#quick-start)
 - [Phase 1 — Authentication](#phase-1--authentication)
 - [Phase 2 — User Management](#phase-2--user-management)
+- [Phase 3 — Worker Profiles](#phase-3--worker-profiles)
 - [API Surface](#api-surface)
 - [Architecture](#architecture)
 - [Security](#security)
@@ -48,7 +49,7 @@ The repo follows an **MVP-first**, **backend-first**, **modular monolith** archi
 |     0 | Documentation & Planning   | ✅ Completed | 2026-06-24 | 2026-06-24 |
 |     1 | Authentication             | ✅ Completed | 2026-06-24 | 2026-06-24 |
 |     2 | User Management            | ✅ Completed | 2026-06-24 | 2026-06-24 |
-|     3 | Worker Profiles            | 🟡 Pending   | —          | —          |
+|     3 | Worker Profiles            | ✅ Completed | 2026-06-24 | 2026-06-24 |
 |     4 | Job Categories             | 🟡 Pending   | —          | —          |
 |     5 | Job Posting                | 🟡 Pending   | —          | —          |
 |     6 | Job Discovery              | 🟡 Pending   | —          | —          |
@@ -143,7 +144,8 @@ sevanto/
 │   ├── vitest.config.ts
 │   ├── .env.example
 │   ├── prisma/
-│   │   ├── schema.prisma      ← User, RefreshToken, PasswordReset, EmailVerification, UserAddress
+│   │   ├── schema.prisma      ← User, RefreshToken, PasswordReset, EmailVerification,
+│   │   │                        UserAddress, WorkerProfile, Skill, WorkerSkill, PortfolioItem
 │   │   └── seed.ts
 │   ├── src/
 │   │   ├── server.ts          ← entry point
@@ -162,10 +164,11 @@ sevanto/
 │   │   ├── modules/
 │   │   │   ├── auth/          ← Phase 1
 │   │   │   ├── users/         ← Phase 2
+│   │   │   ├── workers/       ← Phase 3 (public + self-service + admin verify)
 │   │   │   └── health.routes.ts
 │   │   └── openapi/registry.ts
 │   ├── tests/
-│   │   ├── setup.ts
+│   │   ├── setup.ts73
 │   │   ├── unit/              ← 42 passing tests
 │   │   └── integration/       ← scaffolded (Supertest)
 │   └── smoke.js               ← runtime smoke test
@@ -191,7 +194,10 @@ sevanto/
 │       │       ├── layout.tsx                ← sidebar nav + auth guard
 │       │       ├── dashboard/page.tsx
 │       │       ├── profile/page.tsx          ← Phase 2 (with address CRUD)
-│       │       └── settings/page.tsx         ← Phase 2 (change password / delete)
+│       │       ├── settings/page.tsx         ← Phase 2 (change password / delete)
+│       │       └── workers/                  ← Phase 3 (public worker directory)
+│       │           ├── page.tsx              ← list + filters (city, skill, rating, verified)
+│       │           └── [id]/page.tsx         ← public profile detail (bio, skills, portfolio)
 │       ├── components/
 │       │   ├── auth/                         ← AuthShell, AuthForm
 │       │   └── ui/                           ← Button, Input, FormField
@@ -204,8 +210,12 @@ sevanto/
 │       └── app/
 │           ├── (auth)/signup/page.tsx        ← role=WORKER preset
 │           └── (dashboard)/
-│               ├── profile/page.tsx          ← Phase 2
-│               └── settings/page.tsx         ← Phase 2
+│               ├── profile/page.tsx          ← Phase 2 (name, phone)
+│               ├── settings/page.tsx         ← Phase 2 (change password / delete)
+│               ├── profile/page.tsx          ← Phase 3: worker fields (headline, bio, rate,
+│               │                                       radius, city) + completeness bar
+│               ├── skills/page.tsx           ← Phase 3: skill picker + level selector
+│               └── portfolio/page.tsx        ← Phase 3: add/remove portfolio items by URL
 │
 └── admin/                     ← Admin Next.js 14 app (port 3003)
     └── src/
@@ -214,9 +224,11 @@ sevanto/
             └── (dashboard)/
                 ├── layout.tsx                ← admin role guard
                 ├── dashboard/page.tsx
-                └── users/
-                    ├── page.tsx              ← Phase 2: list users
-                    └── [id]/page.tsx         ← Phase 2: detail + suspend
+│               ├── users/
+│               │   ├── page.tsx              ← Phase 2: list users
+│               │   └── [id]/page.tsx         ← Phase 2: detail + suspend
+│               └── workers/
+│                   └── pending/page.tsx      ← Phase 3: verification queue + verify action
 ```
 
 ---
@@ -315,7 +327,7 @@ services:
 
 ### Option C — Quick demo (no DB)
 
-The shared package and frontends can be developed in isolation by pointing `NEXT_PUBLIC_API_BASE_URL` at a mock. Backend tests run without a DB (42/42 unit tests pass with zero infra).
+The shared package and frontends can be developed in isolation by pointing `NEXT_PUBLIC_API_BASE_URL` at a mock. Backend tests run without a DB (73/73 unit tests pass with zero infra).
 
 ---
 
@@ -396,6 +408,90 @@ Profile editing, address CRUD, password change, account deletion, and admin user
 
 ---
 
+## Phase 3 — Worker Profiles
+
+**Status**: ✅ Complete
+
+Workers build a rich profile (headline, bio, hourly rate, service radius, skills with proficiency levels, and portfolio images). Customers discover verified workers through a public directory. Admins vet new workers through a verification queue.
+
+### Backend endpoints (12/12)
+
+#### Public — worker directory & skill catalog
+
+| Method | Path                  | Auth   | Purpose                                                                                |
+| ------ | --------------------- | ------ | -------------------------------------------------------------------------------------- |
+| `GET`  | `/api/v1/workers`     | public | List workers (filters: `city`, `skill`, `minRating`, `verifiedOnly`, pagination, sort) |
+| `GET`  | `/api/v1/workers/:id` | public | Worker detail (bio, skills, portfolio, stats — **no contact info**)                    |
+| `GET`  | `/api/v1/skills`      | public | Active skill catalog (id, name, slug)                                                  |
+
+#### Worker self-service (WORKER role)
+
+| Method   | Path                               | Auth   | Purpose                                                         |
+| -------- | ---------------------------------- | ------ | --------------------------------------------------------------- |
+| `GET`    | `/api/v1/workers/me`               | WORKER | My profile + completeness % + skills + portfolio                |
+| `PUT`    | `/api/v1/workers/me`               | WORKER | Create-or-replace profile (full upsert)                         |
+| `PATCH`  | `/api/v1/workers/me`               | WORKER | Partial profile update (at least 1 field required)              |
+| `PUT`    | `/api/v1/workers/me/skills`        | WORKER | Replace my skills list (atomic — validate skill IDs are active) |
+| `GET`    | `/api/v1/workers/me/portfolio`     | WORKER | List my portfolio items (sorted by `sortOrder`)                 |
+| `POST`   | `/api/v1/workers/me/portfolio`     | WORKER | Add portfolio item (image URL + optional caption)               |
+| `DELETE` | `/api/v1/workers/me/portfolio/:id` | WORKER | Remove portfolio item (owner-scoped)                            |
+
+#### Admin — verification queue
+
+| Method | Path                               | Auth  | Purpose                                             |
+| ------ | ---------------------------------- | ----- | --------------------------------------------------- |
+| `GET`  | `/api/v1/admin/workers/pending`    | ADMIN | Unverified, active worker profiles (oldest first)   |
+| `POST` | `/api/v1/admin/workers/:id/verify` | ADMIN | Set `isVerified` (admin is the only path to `true`) |
+
+### Validation rules
+
+- **`headline`**: 5–100 characters
+- **`bio`**: 10–2000 characters (≥ 50 chars counts toward completeness)
+- **`yearsExperience`**: integer 0–70
+- **`hourlyRate`**: non-negative integer in **minor units** (e.g. paise); `null` to hide
+- **`city`**: 1–80 characters
+- **`serviceRadiusKm`**: 1–100 (km)
+- **Skills**: max 30 per worker; `level ∈ {BEGINNER, INTERMEDIATE, EXPERT}`
+- **Portfolio**: max **12** images per worker; `imageUrl` must be a valid `http(s)` URL ≤ 2048 chars; caption ≤ 280 chars
+
+### Completeness score
+
+Used to drive the "fill out your profile" meter in the worker UI:
+
+```
+checks = [
+  headline present (≥ 5 chars),
+  bio present (≥ 50 chars),
+  hourlyRate set (> 0),
+  city set,
+  skills.length ≥ 1,
+  portfolio.length ≥ 1,
+]
+score = round(passed / 6 * 100)
+```
+
+### Security highlights
+
+- **Workers only modify their own profile** (`requireAuth` + `requireRole('WORKER')` + ownership check on portfolio deletes)
+- **`isVerified` can only be flipped by an admin** through `/admin/workers/:id/verify` (no worker-self-service path)
+- **Public detail excludes contact info** — only name, city, headline, bio, skills, portfolio, and aggregate stats
+- **Skill IDs validated as active** before persisting worker skills (rejects stale/deactivated skills with `NOT_FOUND`)
+- **Portfolio limit enforced at the service layer** — `BusinessRuleError` if count ≥ 12
+
+### Frontend pages
+
+- **Customer** (`client/`):
+  - `/workers` — paginated directory with filter controls (skill, city, min rating, verified-only)
+  - `/workers/[id]` — public profile detail (bio, skills, portfolio, rating)
+- **Worker** (`worker/`):
+  - `/profile` — worker fields (headline, bio, hourly rate, city, service radius) with **completeness bar** + verified badge
+  - `/skills` — toggle skills from catalog + pick proficiency level (BEGINNER / INTERMEDIATE / EXPERT)
+  - `/portfolio` — add (image URL + caption) and remove portfolio items (≤ 12)
+- **Admin** (`admin/`):
+  - `/workers/pending` — verification queue table (name, email, city, headline, experience, rate, completeness, joined date) with **Verify** action
+
+---
+
 ## API Surface
 
 | Resource              | Endpoints                                                                                          |
@@ -404,9 +500,13 @@ Profile editing, address CRUD, password change, account deletion, and admin user
 | **Users (me)**        | get, update, change-password, delete, avatar-ticket                                                |
 | **Users (addresses)** | list, create, update, delete                                                                       |
 | **Users (admin)**     | list, get, update                                                                                  |
+| **Workers (public)**  | list, detail                                                                                       |
+| **Skills (public)**   | catalog                                                                                            |
+| **Workers (self)**    | get-my, upsert, patch, replace-skills, list/add/delete-portfolio                                   |
+| **Workers (admin)**   | pending, verify                                                                                    |
 | **Health**            | `/healthz`, `/readyz`, `/version`                                                                  |
 
-**Total**: 20 endpoints across 4 modules.
+**Total**: 32 endpoints across 7 modules.
 
 **OpenAPI**: served at `GET /openapi.json` (OpenAPI 3.1) and visualized at `/docs` (Swagger UI).
 
@@ -486,16 +586,18 @@ Sevanto follows defense-in-depth at every layer. The full checklist lives in [do
 
 ### Current coverage
 
-| Suite                                 |                                            Tests | Status          |
-| ------------------------------------- | -----------------------------------------------: | --------------- |
-| `tests/unit/jwt.test.ts`              |                                                6 | ✅              |
-| `tests/unit/password.test.ts`         |                                                3 | ✅              |
-| `tests/unit/tokens.test.ts`           |                                                2 | ✅              |
-| `tests/unit/errors.test.ts`           |                                                2 | ✅              |
-| `tests/unit/validators.test.ts`       |                                               10 | ✅              |
-| `tests/unit/users.validators.test.ts` |                                               19 | ✅              |
-| **Total unit**                        |                                           **42** | **✅ all pass** |
-| `tests/integration/auth.test.ts`      | scaffolded (Supertest, gated by `describe.skip`) |
+| Suite                                   |                                            Tests | Status          |
+| --------------------------------------- | -----------------------------------------------: | --------------- |
+| `tests/unit/jwt.test.ts`                |                                                6 | ✅              |
+| `tests/unit/password.test.ts`           |                                                3 | ✅              |
+| `tests/unit/tokens.test.ts`             |                                                2 | ✅              |
+| `tests/unit/errors.test.ts`             |                                                2 | ✅              |
+| `tests/unit/validators.test.ts`         |                                               10 | ✅              |
+| `tests/unit/users.validators.test.ts`   |                                               19 | ✅              |
+| `tests/unit/workers.validators.test.ts` |                                               24 | ✅              |
+| `tests/unit/workers.service.test.ts`    |                                                7 | ✅              |
+| **Total unit**                          |                                           **73** | **✅ all pass** |
+| `tests/integration/auth.test.ts`        | scaffolded (Supertest, gated by `describe.skip`) |
 
 ### Running tests
 
@@ -633,7 +735,7 @@ npm run lint                 # next lint
 
 - ✅ Phase 1 — Authentication
 - ✅ Phase 2 — User Management
-- 🟡 Phase 3 — Worker Profiles (skills, portfolio)
+- ✅ Phase 3 — Worker Profiles (skills, portfolio, admin verification queue)
 - 🟡 Phase 4 — Job Categories
 - 🟡 Phase 5 — Job Posting
 - 🟡 Phase 6 — Job Discovery
@@ -678,4 +780,4 @@ Every feature ships with: DB schema, API documentation, validators, security rev
 
 ---
 
-**Built with care. Phase 2 complete — moving on to Worker Profiles.**
+**Built with care. Phase 3 complete — 32/32 endpoints live, 73/73 tests green, ready for Job Categories.**

@@ -12,6 +12,18 @@ import type {
   AddressInput,
   AdminUserListQuery,
   PaginatedUsers,
+  PublicWorkerList,
+  PublicWorkerListQuery,
+  PublicWorkerDetail,
+  WorkerProfileCore,
+  WorkerPortfolioInput,
+  WorkerPortfolioItem,
+  UpsertSkillsInput,
+  MyWorkerProfileResponse,
+  SkillCatalog,
+  SkillCatalogItem,
+  PendingWorkerQueue,
+  PendingWorkerQuery,
 } from "./types";
 
 /**
@@ -315,5 +327,102 @@ export class ApiClient {
       method: "PATCH",
       body: JSON.stringify(input),
     });
+  }
+
+  // =====================================================
+  // Phase 3 — Worker Profiles (public)
+  // =====================================================
+
+  listPublicWorkers(query: PublicWorkerListQuery = {}): Promise<PublicWorkerList> {
+    const params = new URLSearchParams();
+    if (query.page) params.set("page", String(query.page));
+    if (query.pageSize) params.set("pageSize", String(query.pageSize));
+    if (query.city) params.set("city", query.city);
+    if (query.skill) params.set("skill", query.skill);
+    if (query.minRating !== undefined) params.set("minRating", String(query.minRating));
+    if (query.verifiedOnly) params.set("verifiedOnly", "true");
+    if (query.sort) params.set("sort", query.sort);
+    const qs = params.toString();
+    return this.request<PublicWorkerList>(`/api/v1/workers${qs ? `?${qs}` : ""}`);
+  }
+
+  getPublicWorker(id: string): Promise<PublicWorkerDetail> {
+    return this.request<PublicWorkerDetail>(`/api/v1/workers/${id}`);
+  }
+
+  // =====================================================
+  // Phase 3 — Worker self-service
+  // =====================================================
+
+  getMyWorkerProfile(): Promise<MyWorkerProfileResponse> {
+    return this.request<MyWorkerProfileResponse>(`/api/v1/workers/me`);
+  }
+
+  upsertMyWorkerProfile(input: WorkerProfileCore): Promise<MyWorkerProfileResponse> {
+    return this.request<MyWorkerProfileResponse>(`/api/v1/workers/me`, {
+      method: "PUT",
+      body: JSON.stringify(input),
+    });
+  }
+
+  patchMyWorkerProfile(input: Partial<WorkerProfileCore>): Promise<MyWorkerProfileResponse> {
+    return this.request<MyWorkerProfileResponse>(`/api/v1/workers/me`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    });
+  }
+
+  upsertMySkills(input: UpsertSkillsInput): Promise<{ count: number }> {
+    return this.request<{ count: number }>(`/api/v1/workers/me/skills`, {
+      method: "PUT",
+      body: JSON.stringify(input),
+    });
+  }
+
+  listMyPortfolio(): Promise<{ items: WorkerPortfolioItem[] }> {
+    return this.request<{ items: WorkerPortfolioItem[] }>(`/api/v1/workers/me/portfolio`);
+  }
+
+  addMyPortfolioItem(input: WorkerPortfolioInput): Promise<{ item: WorkerPortfolioItem }> {
+    return this.request<{ item: WorkerPortfolioItem }>(`/api/v1/workers/me/portfolio`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  deleteMyPortfolioItem(id: string): Promise<{ ok: true }> {
+    return this.request<{ ok: true }>(`/api/v1/workers/me/portfolio/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  // =====================================================
+  // Phase 3 — Skill catalog (public)
+  // =====================================================
+
+  listSkills(): Promise<SkillCatalog> {
+    return this.request<SkillCatalog>(`/api/v1/skills`);
+  }
+
+  // =====================================================
+  // Phase 3 — Admin verification queue
+  // =====================================================
+
+  adminListPendingWorkers(_query: PendingWorkerQuery = {}): Promise<PendingWorkerQueue> {
+    return this.request<PendingWorkerQueue>(`/api/v1/admin/workers/pending`);
+  }
+
+  adminVerifyWorker(profileId: string): Promise<{ profile: { id: string; isVerified: boolean } }> {
+    return this.request<{ profile: { id: string; isVerified: boolean } }>(
+      `/api/v1/admin/workers/${profileId}/verify`,
+      { method: "POST" },
+    );
+  }
+
+  adminUnverifyWorker(profileId: string): Promise<{ profile: { id: string; isVerified: boolean } }> {
+    return this.request<{ profile: { id: string; isVerified: boolean } }>(
+      `/api/v1/admin/workers/${profileId}/verify`,
+      { method: "DELETE" },
+    );
   }
 }
