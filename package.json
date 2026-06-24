@@ -1,0 +1,21 @@
+{
+  "name": "sevanto",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "client",
+    "worker",
+    "admin",
+    "server"
+  ],
+  "scripts": {
+    "dev:server": "npm --workspace server run dev",
+    "dev:client": "npm --workspace @sevanto/client run dev",
+    "dev:worker": "npm --workspace @sevanto/worker run dev",
+    "dev:admin": "npm --workspace @sevanto/admin run dev",
+    "build:server": "npm --workspace server run build",
+    "typecheck": "npm --workspace server run typecheck && npm --workspace @sevanto/shared run typecheck",
+    "test": "npm --workspace server run test"
+  }
+}
