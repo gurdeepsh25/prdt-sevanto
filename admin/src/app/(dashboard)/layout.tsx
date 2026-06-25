@@ -43,6 +43,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     { href: "/dashboard", label: "Overview" },
     { href: "/users", label: "Users" },
     { href: "/workers/pending", label: "Worker Verification" },
+    { href: "/categories", label: "Categories" },
   ];
 
   return (

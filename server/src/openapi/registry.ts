@@ -655,3 +655,290 @@ registry.registerPath({
   },
   responses: { 200: { description: "OK" } },
 });
+
+// =====================================================
+// Phase 4 — Job Categories / Subcategories / Skills
+// =====================================================
+
+const CategorySchema = z
+  .object({
+    id: z.string().uuid(),
+    name: z.string(),
+    slug: z.string(),
+    description: z.string().nullable().optional(),
+    iconKey: z.string().nullable().optional(),
+    sortOrder: z.number().int(),
+    isActive: z.boolean().optional(),
+  })
+  .openapi("Category");
+
+const SubcategorySchema = z
+  .object({
+    id: z.string().uuid(),
+    categoryId: z.string().uuid(),
+    name: z.string(),
+    slug: z.string(),
+    sortOrder: z.number().int(),
+    isActive: z.boolean().optional(),
+  })
+  .openapi("Subcategory");
+
+const SkillSchema = z
+  .object({
+    id: z.string().uuid(),
+    name: z.string(),
+    slug: z.string(),
+    subcategoryId: z.string().uuid().nullable().optional(),
+  })
+  .openapi("Skill");
+
+// Public — categories
+registry.registerPath({
+  method: "get",
+  path: "/categories",
+  summary: "Public: list active categories (with subcategory counts)",
+  tags: ["Categories"],
+  responses: {
+    200: {
+      description: "OK",
+      content: {
+        "application/json": {
+          schema: z.object({
+            items: z.array(
+              CategorySchema.extend({
+                subcategoriesCount: z.number().int().nonnegative(),
+              }),
+            ),
+          }),
+        },
+      },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/categories/{slug}",
+  summary: "Public: get active category by slug (with subcategories)",
+  tags: ["Categories"],
+  request: { params: z.object({ slug: z.string() }) },
+  responses: {
+    200: {
+      description: "OK",
+      content: {
+        "application/json": {
+          schema: z.object({
+            category: CategorySchema.extend({
+              subcategories: z.array(SubcategorySchema),
+            }),
+          }),
+        },
+      },
+    },
+    404: { description: "Not found" },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/categories/{slug}/subcategories",
+  summary: "Public: list active subcategories for a category",
+  tags: ["Categories"],
+  request: { params: z.object({ slug: z.string() }) },
+  responses: {
+    200: {
+      description: "OK",
+      content: {
+        "application/json": {
+          schema: z.object({ items: z.array(SubcategorySchema) }),
+        },
+      },
+    },
+  },
+});
+
+// Public — skills (extended query)
+registry.registerPath({
+  method: "get",
+  path: "/skills",
+  summary:
+    "Public: list skills (optional filters: categoryId, subcategoryId, categorySlug)",
+  tags: ["Workers"],
+  request: {
+    query: z.object({
+      categoryId: z.string().uuid().optional(),
+      subcategoryId: z.string().uuid().optional(),
+      categorySlug: z.string().optional(),
+      includeInactive: z.boolean().optional(),
+    }),
+  },
+  responses: {
+    200: {
+      description: "OK",
+      content: {
+        "application/json": {
+          schema: z.object({ items: z.array(SkillSchema) }),
+        },
+      },
+    },
+  },
+});
+
+// Admin — categories
+registry.registerPath({
+  method: "get",
+  path: "/admin/categories",
+  summary: "Admin: list all categories (incl. inactive) with subcategories",
+  tags: ["Admin"],
+  security: [{ bearerAuth: [] }],
+  responses: { 200: { description: "OK" } },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/admin/categories",
+  summary: "Admin: create a category",
+  tags: ["Admin"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            name: z.string().min(2).max(60),
+            slug: z.string().optional(),
+            description: z.string().max(500).nullable().optional(),
+            iconKey: z.string().max(40).nullable().optional(),
+            sortOrder: z.number().int().min(0).optional(),
+            isActive: z.boolean().optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    201: { description: "Created" },
+    409: { description: "Conflict" },
+  },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/admin/categories/{id}",
+  summary: "Admin: update a category",
+  tags: ["Admin"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: z.object({ id: z.string().uuid() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            name: z.string().min(2).max(60).optional(),
+            description: z.string().max(500).nullable().optional(),
+            iconKey: z.string().max(40).nullable().optional(),
+            sortOrder: z.number().int().min(0).optional(),
+            isActive: z.boolean().optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: { 200: { description: "OK" } },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/admin/categories/{id}/subcategories",
+  summary: "Admin: add a subcategory to a category",
+  tags: ["Admin"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: z.object({ id: z.string().uuid() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            name: z.string().min(2).max(60),
+            slug: z.string().optional(),
+            description: z.string().max(500).nullable().optional(),
+            sortOrder: z.number().int().min(0).optional(),
+            isActive: z.boolean().optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: { 201: { description: "Created" } },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/admin/subcategories/{id}",
+  summary: "Admin: update a subcategory",
+  tags: ["Admin"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: z.object({ id: z.string().uuid() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            name: z.string().min(2).max(60).optional(),
+            description: z.string().max(500).nullable().optional(),
+            sortOrder: z.number().int().min(0).optional(),
+            isActive: z.boolean().optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: { 200: { description: "OK" } },
+});
+
+// Admin — skills
+registry.registerPath({
+  method: "post",
+  path: "/admin/skills",
+  summary: "Admin: create a skill (optionally linked to a subcategory)",
+  tags: ["Admin"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            name: z.string().min(2).max(60),
+            slug: z.string().optional(),
+            subcategoryId: z.string().uuid().nullable().optional(),
+            isActive: z.boolean().optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: { 201: { description: "Created" } },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/admin/skills/{id}",
+  summary: "Admin: update a skill",
+  tags: ["Admin"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: z.object({ id: z.string().uuid() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            name: z.string().min(2).max(60).optional(),
+            subcategoryId: z.string().uuid().nullable().optional(),
+            isActive: z.boolean().optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: { 200: { description: "OK" } },
+});

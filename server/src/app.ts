@@ -15,6 +15,12 @@ import workersRouter, {
   adminRouter as workersAdminRouter,
   skillsRouter as workersSkillsRouter,
 } from "./modules/workers/workers.routes.js";
+import {
+  categoriesPublicRouter,
+  adminCategoriesRouter,
+  adminSubcategoriesRouter,
+  adminSkillsRouter,
+} from "./modules/categories/categories.routes.js";
 import healthRouter from "./modules/health.routes.js";
 import { buildOpenApiDocument } from "./openapi/registry.js";
 
@@ -85,6 +91,12 @@ export function createApp(): Express {
   app.use("/api/v1/workers", workersRouter);
   app.use("/api/v1/admin/workers", workersAdminRouter);
   app.use("/api/v1/skills", workersSkillsRouter);
+
+  // Phase 4 — categories taxonomy
+  app.use("/api/v1/categories", categoriesPublicRouter);
+  app.use("/api/v1/admin/categories", adminCategoriesRouter);
+  app.use("/api/v1/admin/subcategories", adminSubcategoriesRouter);
+  app.use("/api/v1/admin/skills", adminSkillsRouter);
 
   // 404 + error handlers last
   app.use(notFoundHandler);

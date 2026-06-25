@@ -277,6 +277,7 @@ export interface SkillCatalogItem {
   id: string;
   name: string;
   slug: string;
+  subcategoryId?: string | null;
 }
 
 export interface SkillCatalog {
@@ -307,4 +308,93 @@ export interface PendingWorkerQuery {
   pageSize?: number;
   city?: string;
   search?: string;
+}
+
+// =====================================================
+// Phase 4 — Job Categories
+// =====================================================
+
+export interface CategoryRef {
+  id: string;
+  name: string;
+  slug: string;
+  iconKey: string | null;
+  sortOrder: number;
+  isActive?: boolean;
+}
+
+export interface CategoryWithSubs extends CategoryRef {
+  description: string | null;
+  subcategories: SubcategoryRef[];
+}
+
+export interface SubcategoryRef {
+  id: string;
+  categoryId: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  sortOrder: number;
+  isActive?: boolean;
+}
+
+export interface PublicCategoryListItem extends CategoryRef {
+  description: string | null;
+  subcategoriesCount: number;
+}
+
+export interface CategoryCreateInput {
+  name: string;
+  slug?: string;
+  description?: string | null;
+  iconKey?: string | null;
+  sortOrder?: number;
+  isActive?: boolean;
+}
+
+export interface CategoryUpdateInput {
+  name?: string;
+  description?: string | null;
+  iconKey?: string | null;
+  sortOrder?: number;
+  isActive?: boolean;
+}
+
+export interface SubcategoryCreateInput {
+  name: string;
+  slug?: string;
+  description?: string | null;
+  sortOrder?: number;
+  isActive?: boolean;
+}
+
+export interface SubcategoryUpdateInput {
+  name?: string;
+  description?: string | null;
+  sortOrder?: number;
+  isActive?: boolean;
+}
+
+export interface SkillCreateInput {
+  name: string;
+  slug?: string;
+  subcategoryId?: string | null;
+  isActive?: boolean;
+}
+
+export interface SkillUpdateInput {
+  name?: string;
+  subcategoryId?: string | null;
+  isActive?: boolean;
+}
+
+export interface SkillWithSubcategory extends SkillCatalogItem {
+  subcategoryId: string | null;
+}
+
+export interface PublicSkillsQuery {
+  categoryId?: string;
+  subcategoryId?: string;
+  categorySlug?: string;
+  includeInactive?: boolean;
 }

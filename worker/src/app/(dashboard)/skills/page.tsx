@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useApi } from "@/hooks/use-api";
 import type {
+  CategoryWithSubs,
   MyWorkerSkill,
   SkillCatalogItem,
   SkillLevel,
@@ -10,23 +11,28 @@ import type {
 
 export default function SkillsPage() {
   const api = useApi();
+  const [categories, setCategories] = useState<CategoryWithSubs[]>([]);
   const [catalog, setCatalog] = useState<SkillCatalogItem[]>([]);
   const [mySkills, setMySkills] = useState<MyWorkerSkill[]>([]);
+  const [activeCategory, setActiveCategory] = useState<string | "all">("all");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [filter, setFilter] = useState("");
 
   async function load() {
     setLoading(true);
     setError(null);
     try {
-      const [cat, me] = await Promise.all([
+      const [cats, skills, me] = await Promise.all([
+        api
+          .adminListCategories()
+          .catch(() => ({ items: [] as CategoryWithSubs[] })),
         api.listSkills(),
         api.getMyWorkerProfile(),
       ]);
-      setCatalog(cat.items);
+      setCategories(cats.items);
+      setCatalog(skills.items);
       setMySkills(me.skills);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load");
@@ -64,10 +70,9 @@ export default function SkillsPage() {
     setError(null);
     setSuccess(false);
     try {
-      const res = await api.upsertMySkills({
+      await api.upsertMySkills({
         skills: skills.map((s) => ({ skillId: s.id, level: s.level })),
       });
-      void res;
       setSuccess(true);
       setTimeout(() => setSuccess(false), 1500);
     } catch (err) {
@@ -77,11 +82,22 @@ export default function SkillsPage() {
     }
   }
 
-  if (loading) return <p className="text-sm text-slate-500">Loading…</p>;
+  const subToCat = new Map<string, string>();
+  for (const cat of categories) {
+    for (const sub of cat.subcategories) {
+      subToCat.set(sub.id, cat.id);
+    }
+  }
 
-  const visibleCatalog = catalog.filter((s) =>
-    filter ? s.name.toLowerCase().includes(filter.toLowerCase()) : true,
-  );
+  const visibleSkills =
+    activeCategory === "all"
+      ? catalog
+      : catalog.filter((s) => {
+          if (!s.subcategoryId) return false;
+          return subToCat.get(s.subcategoryId) === activeCategory;
+        });
+
+  if (loading) return <p className="text-sm text-slate-500">Loading…</p>;
 
   return (
     <div className="space-y-6">
@@ -109,21 +125,41 @@ export default function SkillsPage() {
         </p>
       )}
 
-      <input
-        type="text"
-        placeholder="Filter skills…"
-        value={filter}
-        onChange={(e) => setFilter(e.target.value)}
-        className="w-full max-w-sm rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
-      />
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setActiveCategory("all")}
+          className={`rounded-full px-3 py-1 text-xs font-medium ${
+            activeCategory === "all"
+              ? "bg-slate-900 text-white"
+              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+          }`}
+        >
+          All
+        </button>
+        {categories.map((cat) => (
+          <button
+            key={cat.id}
+            type="button"
+            onClick={() => setActiveCategory(cat.id)}
+            className={`rounded-full px-3 py-1 text-xs font-medium ${
+              activeCategory === cat.id
+                ? "bg-slate-900 text-white"
+                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+            }`}
+          >
+            {cat.name}
+          </button>
+        ))}
+      </div>
 
-      {visibleCatalog.length === 0 ? (
+      {visibleSkills.length === 0 ? (
         <p className="rounded-lg bg-slate-100 px-4 py-6 text-center text-sm text-slate-600">
-          No skills match your filter.
+          No skills in this category yet.
         </p>
       ) : (
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {visibleCatalog.map((s) => {
+          {visibleSkills.map((s) => {
             const current = hasSkill(s.id);
             return (
               <li

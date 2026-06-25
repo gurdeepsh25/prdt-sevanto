@@ -12,6 +12,8 @@ import {
   portfolioIdParamSchema,
 } from "./workers.validators.js";
 import { requireAuth, requireRole } from "../../common/middlewares/auth.js";
+import * as categoriesController from "../categories/categories.controller.js";
+import { publicSkillsQuerySchema } from "../categories/categories.validators.js";
 
 const router = Router();
 
@@ -89,6 +91,16 @@ adminRouter.post(
 
 // Skills catalog (mounted separately at /api/v1/skills)
 const skillsRouter = Router();
-skillsRouter.get("/", controller.listSkills);
+skillsRouter.get(
+  "/",
+  validate({ query: publicSkillsQuerySchema }),
+  categoriesController.listSkills,
+);
+// Backwards-compatible alias used by Phase 3 callers
+skillsRouter.get(
+  "/catalog",
+  validate({ query: publicSkillsQuerySchema }),
+  categoriesController.listSkills,
+);
 
 export { router as default, adminRouter, skillsRouter };

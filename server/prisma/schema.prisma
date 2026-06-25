@@ -165,19 +165,64 @@ model WorkerProfile {
 }
 
 // =====================================================
-// Skill catalog (Phase 3 � top-level skills; Phase 4
-// will add optional Category relation)
+// Job taxonomy (Phase 4)
+// Category → Subcategory → Skill
+// =====================================================
+
+model Category {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  iconKey     String?  @map("icon_key") // UI hint, e.g. "wrench", "sparkles"
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  subcategories Subcategory[]
+
+  @@index([isActive, sortOrder])
+  @@map("categories")
+}
+
+model Subcategory {
+  id          String   @id @default(uuid()) @db.Uuid
+  categoryId  String   @map("category_id") @db.Uuid
+  name        String
+  slug        String
+  description String?
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  skills   Skill[]
+
+  @@unique([categoryId, slug])
+  @@index([categoryId, isActive, sortOrder])
+  @@map("subcategories")
+}
+
+// =====================================================
+// Skill catalog (Phase 3 + Phase 4 subcategory link)
 // =====================================================
 
 model Skill {
-  id        String   @id @default(uuid()) @db.Uuid
-  name      String   @unique
-  slug      String   @unique
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  id             String   @id @default(uuid()) @db.Uuid
+  name           String   @unique
+  slug           String   @unique
+  subcategoryId  String?  @map("subcategory_id") @db.Uuid
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  workers WorkerSkill[]
+  subcategory Subcategory?  @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+  workers     WorkerSkill[]
 
+  @@index([subcategoryId])
+  @@index([isActive])
   @@map("skills")
 }
 

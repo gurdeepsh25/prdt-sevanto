@@ -16,6 +16,7 @@
 - [Phase 1 — Authentication](#phase-1--authentication)
 - [Phase 2 — User Management](#phase-2--user-management)
 - [Phase 3 — Worker Profiles](#phase-3--worker-profiles)
+- [Phase 4 — Job Categories](#phase-4--job-categories)
 - [API Surface](#api-surface)
 - [Architecture](#architecture)
 - [Security](#security)
@@ -50,7 +51,7 @@ The repo follows an **MVP-first**, **backend-first**, **modular monolith** archi
 |     1 | Authentication             | ✅ Completed | 2026-06-24 | 2026-06-24 |
 |     2 | User Management            | ✅ Completed | 2026-06-24 | 2026-06-24 |
 |     3 | Worker Profiles            | ✅ Completed | 2026-06-24 | 2026-06-24 |
-|     4 | Job Categories             | 🟡 Pending   | —          | —          |
+|     4 | Job Categories             | ✅ Completed | 2026-06-25 | 2026-06-25 |
 |     5 | Job Posting                | 🟡 Pending   | —          | —          |
 |     6 | Job Discovery              | 🟡 Pending   | —          | —          |
 |     7 | Job Applications           | 🟡 Pending   | —          | —          |
@@ -227,8 +228,10 @@ sevanto/
 │               ├── users/
 │               │   ├── page.tsx              ← Phase 2: list users
 │               │   └── [id]/page.tsx         ← Phase 2: detail + suspend
-│               └── workers/
-│                   └── pending/page.tsx      ← Phase 3: verification queue + verify action
+│               ├── workers/
+│               │   └── pending/page.tsx      ← Phase 3: verification queue + verify action
+│               └── categories/
+│                   └── page.tsx              ← Phase 4: category tree mgmt + CRUD
 ```
 
 ---
@@ -492,6 +495,86 @@ score = round(passed / 6 * 100)
 
 ---
 
+## Phase 4 — Job Categories
+
+**Status**: ✅ Complete
+
+A managed taxonomy (`Category → Subcategory → Skill`) that powers filtering, discovery, and worker matching. The initial tree is seeded by `npm run prisma:seed` and can be edited from the admin app.
+
+### Backend endpoints (12/12)
+
+#### Public — categories & subcategories
+(filterable by category / subcategory)                                                     |
+| **Workers (self)**    | get-my, upsert, patch, replace-skills, list/add/delete-portfolio                                   |
+| **Workers (admin)**   | pending, verify                                                                                    |
+| **Categories (public)** | list, get-by-slug, subcategories-for-category                                                     |
+| **Categories (admin)** | list, create, update, add-subcategory, update-subcategory                                          |
+| **Skills (admin)**    | create, update                                                                                     |
+| **Health**            | `/healthz`, `/readyz`, `/version`                                                                  |
+
+**Total**: 44 endpoints across 10slug/subcategories`          | public | Active subcategories for a category                                    |
+| `GET`  | `/api/v1/skills`                                  | public | Active skills (optional `?categoryId=…` / `?subcategoryId=…` filters)  |
+
+#### Admin — categories
+
+| Method | Path                                              | Auth  | Purpose                                              |
+| ------ | ------------------------------------------------- | ----- | ---------------------------------------------------- |
+| `GET`  | `/api/v1/admin/categories`                        | ADMIN | All categories (incl. inactive) + subcategories     |
+| `POST` | `/api/v1/admin/categories`                        | ADMIN | Create category                                      |
+| `PATCH`| `/api/v1/admin/categories/:id`                    | ADMIN | Update / activate / deactivate                      |
+| `POST` | `/api/v1/admin/categories/:id/subcategories`      | ADMIN | Add subcategory                                      |
+| `PATCH`| `/api/v1/admin/subcategories/:id`                 | ADMIN | Update subcategory (name / order / isActive)         |
+
+#### Admin — skills
+
+| Method | Path                              | Auth  | Purpose                                              |
+| ------ | --------------------------------- | ----- | ---------------------------------------------------- |
+| `POST` | `/api/v1/admin/skills`            | ADMIN | Create skill (optionally linked to a subcategory)    |
+| `PATCH`| `/api/v1/admin/skills/:id`        | ADMIN | Update / relink / deactivate                         |
+
+### Validation rules
+
+- **`name`**: 2–60 characters (category, subcategory, skill)
+- **`slug`**: kebab-case, lowercase, max 80 chars (auto-generated from `name` when omitted)
+- **`description`**: ≤ 500 characters
+- **`iconKey`**: ≤ 40 characters (UI hint)
+- **`sortOrder`**: non-negative integer (lower = first)
+- **`isActive`**: defaults `true`; deactivating hides from all public reads
+
+### Seed tree
+
+The initial taxonomy is seeded automatically and includes:
+
+```
+Home Services      → Plumbing, Electrical, Carpentry, Painting, Appliance Repair
+Cleaning           → Home Cleaning, Office Cleaning, Deep Cleaning
+Tutoring           → School Subjects, Languages, Music
+Beauty & Wellness  → Salon at Home, Spa & Massage, Makeup
+Fitness            → Personal Trainer, Yoga
+Tech Help          → Computer Repair, Mobile Repair, Smart Home Setup
+Other              → Miscellaneous
+```
+
+### Security highlights
+
+- **Public reads exclude inactive records** — `isActive=false` is never returned to non-admin callers
+- **Admin-only mutations** — every `POST` / `PATCH` requires `ADMIN` role via `requireRole('ADMIN')`
+- **Slug uniqueness enforced** at the DB layer; collisions throw `ConflictError` (HTTP 409)
+- **Subcategory / skill lookups validated** — linking to a non-existent parent returns `NOT_FOUND`
+
+### Frontend pages
+
+- **Customer** (`client/`):
+  - `/categories` — grid of active categories (icon key + subcategory count)
+  - `/categories/[slug]` — category detail + subcategory list
+  - Dashboard nav updated to include **Categories**
+- **Worker** (`worker/`):
+  - `/skills` — now grouped by **category pills** at the top; selecting a category filters the visible skills
+- **Admin** (`admin/`):
+  - `/categories` — create categories, toggle active/inactive, add subcategories inline, toggle subcategory active state
+
+---
+
 ## API Surface
 
 | Resource              | Endpoints                                                                                          |
@@ -596,7 +679,8 @@ Sevanto follows defense-in-depth at every layer. The full checklist lives in [do
 | `tests/unit/users.validators.test.ts`   |                                               19 | ✅              |
 | `tests/unit/workers.validators.test.ts` |                                               24 | ✅              |
 | `tests/unit/workers.service.test.ts`    |                                                7 | ✅              |
-| **Total unit**                          |                                           **73** | **✅ all pass** |
+| `tests/unit/categories.validators.test.ts` |                                             27 | ✅              |
+| **Total unit**                          |                                          **100** | **✅ all pass** |
 | `tests/integration/auth.test.ts`        | scaffolded (Supertest, gated by `describe.skip`) |
 
 ### Running tests
@@ -736,7 +820,7 @@ npm run lint                 # next lint
 - ✅ Phase 1 — Authentication
 - ✅ Phase 2 — User Management
 - ✅ Phase 3 — Worker Profiles (skills, portfolio, admin verification queue)
-- 🟡 Phase 4 — Job Categories
+- ✅ Phase 4 — Job Categories (managed taxonomy: Category → Subcategory → Skill)
 - 🟡 Phase 5 — Job Posting
 - 🟡 Phase 6 — Job Discovery
 - 🟡 Phase 7 — Job Applications
@@ -780,4 +864,4 @@ Every feature ships with: DB schema, API documentation, validators, security rev
 
 ---
 
-**Built with care. Phase 3 complete — 32/32 endpoints live, 73/73 tests green, ready for Job Categories.**
+**Built with care. Phase 4 complete — 44/44 endpoints live, 100/100 tests green, ready for Job Posting.**

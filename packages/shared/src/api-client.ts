@@ -24,6 +24,16 @@ import type {
   SkillCatalogItem,
   PendingWorkerQueue,
   PendingWorkerQuery,
+  CategoryWithSubs,
+  PublicCategoryListItem,
+  SubcategoryRef,
+  CategoryCreateInput,
+  CategoryUpdateInput,
+  SubcategoryCreateInput,
+  SubcategoryUpdateInput,
+  SkillCreateInput,
+  SkillUpdateInput,
+  PublicSkillsQuery,
 } from "./types";
 
 /**
@@ -445,6 +455,104 @@ export class ApiClient {
     return this.request<{ profile: { id: string; isVerified: boolean } }>(
       `/api/v1/admin/workers/${profileId}/verify`,
       { method: "DELETE" },
+    );
+  }
+
+  // =====================================================
+  // Phase 4 — Categories & Taxonomy
+  // =====================================================
+
+  listCategories(): Promise<{ items: PublicCategoryListItem[] }> {
+    return this.request<{ items: PublicCategoryListItem[] }>(
+      "/api/v1/categories",
+    );
+  }
+
+  getCategoryBySlug(slug: string): Promise<{ category: CategoryWithSubs }> {
+    return this.request<{ category: CategoryWithSubs }>(
+      `/api/v1/categories/${encodeURIComponent(slug)}`,
+    );
+  }
+
+  listSubcategoriesByCategory(slug: string): Promise<{ items: SubcategoryRef[] }> {
+    return this.request<{ items: SubcategoryRef[] }>(
+      `/api/v1/categories/${encodeURIComponent(slug)}/subcategories`,
+    );
+  }
+
+  listSkillsExtended(
+    query: PublicSkillsQuery = {},
+  ): Promise<{ items: SkillCatalogItem[] }> {
+    const params = new URLSearchParams();
+    if (query.categoryId) params.set("categoryId", query.categoryId);
+    if (query.subcategoryId) params.set("subcategoryId", query.subcategoryId);
+    if (query.categorySlug) params.set("categorySlug", query.categorySlug);
+    if (query.includeInactive) params.set("includeInactive", "true");
+    const qs = params.toString();
+    return this.request<{ items: SkillCatalogItem[] }>(
+      `/api/v1/skills${qs ? `?${qs}` : ""}`,
+    );
+  }
+
+  // ---- Admin: categories ----
+  adminListCategories(): Promise<{ items: CategoryWithSubs[] }> {
+    return this.request<{ items: CategoryWithSubs[] }>(
+      "/api/v1/admin/categories",
+    );
+  }
+
+  adminCreateCategory(input: CategoryCreateInput): Promise<{ category: { id: string; name: string; slug: string } }> {
+    return this.request<{ category: { id: string; name: string; slug: string } }>(
+      "/api/v1/admin/categories",
+      { method: "POST", body: JSON.stringify(input) },
+    );
+  }
+
+  adminUpdateCategory(
+    id: string,
+    input: CategoryUpdateInput,
+  ): Promise<{ category: CategoryWithSubs }> {
+    return this.request<{ category: CategoryWithSubs }>(
+      `/api/v1/admin/categories/${id}`,
+      { method: "PATCH", body: JSON.stringify(input) },
+    );
+  }
+
+  adminAddSubcategory(
+    categoryId: string,
+    input: SubcategoryCreateInput,
+  ): Promise<{ subcategory: SubcategoryRef }> {
+    return this.request<{ subcategory: SubcategoryRef }>(
+      `/api/v1/admin/categories/${categoryId}/subcategories`,
+      { method: "POST", body: JSON.stringify(input) },
+    );
+  }
+
+  adminUpdateSubcategory(
+    id: string,
+    input: SubcategoryUpdateInput,
+  ): Promise<{ subcategory: SubcategoryRef }> {
+    return this.request<{ subcategory: SubcategoryRef }>(
+      `/api/v1/admin/subcategories/${id}`,
+      { method: "PATCH", body: JSON.stringify(input) },
+    );
+  }
+
+  // ---- Admin: skills ----
+  adminCreateSkill(input: SkillCreateInput): Promise<{ skill: SkillCatalogItem }> {
+    return this.request<{ skill: SkillCatalogItem }>(
+      "/api/v1/admin/skills",
+      { method: "POST", body: JSON.stringify(input) },
+    );
+  }
+
+  adminUpdateSkill(
+    id: string,
+    input: SkillUpdateInput,
+  ): Promise<{ skill: SkillCatalogItem }> {
+    return this.request<{ skill: SkillCatalogItem }>(
+      `/api/v1/admin/skills/${id}`,
+      { method: "PATCH", body: JSON.stringify(input) },
     );
   }
 }
