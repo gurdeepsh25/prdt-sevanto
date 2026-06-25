@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // =====================================================
 // Profile
@@ -15,16 +15,18 @@ export const workerProfileSchema = z.object({
 export const workerProfileUpdateSchema = workerProfileSchema
   .partial()
   .strict()
-  .refine((d) => Object.keys(d).length > 0, { message: 'At least one field must be provided' });
+  .refine((d) => Object.keys(d).length > 0, {
+    message: "At least one field must be provided",
+  });
 
 // =====================================================
 // Skills
 // =====================================================
-export const skillLevelSchema = z.enum(['BEGINNER', 'INTERMEDIATE', 'EXPERT']);
+export const skillLevelSchema = z.enum(["BEGINNER", "INTERMEDIATE", "EXPERT"]);
 
 export const workerSkillInputSchema = z.object({
   skillId: z.string().uuid(),
-  level: skillLevelSchema.default('INTERMEDIATE'),
+  level: skillLevelSchema.default("INTERMEDIATE"),
 });
 
 export const upsertSkillsSchema = z
@@ -52,14 +54,20 @@ export const workerListQuerySchema = z.object({
   skill: z.string().trim().min(1).max(60).optional(),
   minRating: z.coerce.number().min(0).max(5).optional(),
   verifiedOnly: z
-    .union([z.literal('true'), z.literal('false'), z.boolean()])
+    .union([z.literal("true"), z.literal("false"), z.boolean()])
     .optional()
-    .transform((v) => v === true || v === 'true')
+    .transform((v) => v === true || v === "true")
     .default(false),
   sort: z
-    .enum(['avgRating:desc', 'avgRating:asc', 'createdAt:desc', 'createdAt:asc', 'totalJobsCompleted:desc'])
+    .enum([
+      "avgRating:desc",
+      "avgRating:asc",
+      "createdAt:desc",
+      "createdAt:asc",
+      "totalJobsCompleted:desc",
+    ])
     .optional()
-    .default('avgRating:desc'),
+    .default("avgRating:desc"),
 });
 
 // =====================================================
@@ -74,7 +82,9 @@ export const idParamSchema = z.object({ id: z.string().uuid() });
 export const portfolioIdParamSchema = z.object({ id: z.string().uuid() });
 
 export type WorkerProfileInput = z.infer<typeof workerProfileSchema>;
-export type WorkerProfileUpdateInput = z.infer<typeof workerProfileUpdateSchema>;
+export type WorkerProfileUpdateInput = z.infer<
+  typeof workerProfileUpdateSchema
+>;
 export type WorkerSkillInput = z.infer<typeof workerSkillInputSchema>;
 export type UpsertSkillsInput = z.infer<typeof upsertSkillsSchema>;
 export type PortfolioCreateInput = z.infer<typeof portfolioCreateSchema>;

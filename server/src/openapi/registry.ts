@@ -468,7 +468,17 @@ registry.registerPath({
   path: "/workers",
   summary: "Public: list workers (search & filter)",
   tags: ["Workers"],
-  request: { query: z.object({ page: z.number().optional(), pageSize: z.number().optional(), city: z.string().optional(), skill: z.string().optional(), minRating: z.number().optional(), verifiedOnly: z.boolean().optional(), sort: z.string().optional() }) },
+  request: {
+    query: z.object({
+      page: z.number().optional(),
+      pageSize: z.number().optional(),
+      city: z.string().optional(),
+      skill: z.string().optional(),
+      minRating: z.number().optional(),
+      verifiedOnly: z.boolean().optional(),
+      sort: z.string().optional(),
+    }),
+  },
   responses: { 200: { description: "OK" } },
 });
 
@@ -534,7 +544,14 @@ registry.registerPath({
     body: {
       content: {
         "application/json": {
-          schema: z.object({ skills: z.array(z.object({ skillId: z.string().uuid(), level: z.enum(["BEGINNER", "INTERMEDIATE", "EXPERT"]) })) }),
+          schema: z.object({
+            skills: z.array(
+              z.object({
+                skillId: z.string().uuid(),
+                level: z.enum(["BEGINNER", "INTERMEDIATE", "EXPERT"]),
+              }),
+            ),
+          }),
         },
       },
     },
@@ -594,7 +611,13 @@ registry.registerPath({
       content: {
         "application/json": {
           schema: z.object({
-            items: z.array(z.object({ id: z.string().uuid(), name: z.string(), slug: z.string() })),
+            items: z.array(
+              z.object({
+                id: z.string().uuid(),
+                name: z.string(),
+                slug: z.string(),
+              }),
+            ),
           }),
         },
       },
@@ -622,7 +645,10 @@ registry.registerPath({
     body: {
       content: {
         "application/json": {
-          schema: z.object({ isVerified: z.boolean(), reason: z.string().max(280).optional() }),
+          schema: z.object({
+            isVerified: z.boolean(),
+            reason: z.string().max(280).optional(),
+          }),
         },
       },
     },

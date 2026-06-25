@@ -80,7 +80,9 @@ export default function PortfolioPage() {
       </header>
 
       {error && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          {error}
+        </p>
       )}
 
       <form
@@ -130,7 +132,9 @@ export default function PortfolioPage() {
               />
               <figcaption className="flex items-center justify-between px-3 py-2">
                 <p className="truncate text-xs text-slate-600">
-                  {item.caption ?? <span className="italic text-slate-400">No caption</span>}
+                  {item.caption ?? (
+                    <span className="italic text-slate-400">No caption</span>
+                  )}
                 </p>
                 <button
                   type="button"

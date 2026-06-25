@@ -53,7 +53,9 @@ export default function PendingWorkersPage() {
       </header>
 
       {error && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          {error}
+        </p>
       )}
 
       {loading ? (
@@ -65,7 +67,9 @@ export default function PendingWorkersPage() {
       ) : (
         data && (
           <>
-            <p className="text-xs text-slate-500">{data.items.length} pending</p>
+            <p className="text-xs text-slate-500">
+              {data.items.length} pending
+            </p>
             <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
               <table className="min-w-full divide-y divide-slate-200 text-sm">
                 <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">

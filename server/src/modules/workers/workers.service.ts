@@ -1,12 +1,12 @@
-import type { Prisma, WorkerProfile, Skill, SkillLevel } from '@prisma/client';
-import { prisma } from '../../infra/prisma/client.js';
+import type { Prisma, WorkerProfile, Skill, SkillLevel } from "@prisma/client";
+import { prisma } from "../../infra/prisma/client.js";
 import {
   ConflictError,
   ForbiddenError,
   NotFoundError,
   UnauthenticatedError,
   BusinessRuleError,
-} from '../../common/errors/AppError.js';
+} from "../../common/errors/AppError.js";
 import type {
   WorkerProfileInput,
   WorkerProfileUpdateInput,
@@ -14,7 +14,7 @@ import type {
   PortfolioCreateInput,
   WorkerListQuery,
   AdminVerifyWorkerInput,
-} from './workers.validators.js';
+} from "./workers.validators.js";
 
 const MAX_PORTFOLIO_ITEMS = 12;
 
@@ -25,8 +25,8 @@ function slugify(name: string): string {
   return name
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
     .slice(0, 80);
 }
 
@@ -95,15 +95,17 @@ export interface SkillCatalogItem {
 export async function listSkillCatalog(): Promise<SkillCatalogItem[]> {
   const rows = await prisma.skill.findMany({
     where: { isActive: true },
-    orderBy: { name: 'asc' },
+    orderBy: { name: "asc" },
     select: { id: true, name: true, slug: true },
   });
   return rows;
 }
 
-export async function listPublicWorkers(query: WorkerListQuery): Promise<PublicWorkerList> {
+export async function listPublicWorkers(
+  query: WorkerListQuery,
+): Promise<PublicWorkerList> {
   const where: Prisma.WorkerProfileWhereInput = {};
-  if (query.city) where.city = { equals: query.city, mode: 'insensitive' };
+  if (query.city) where.city = { equals: query.city, mode: "insensitive" };
   if (query.verifiedOnly) where.isVerified = true;
   if (query.minRating !== undefined) where.avgRating = { gte: query.minRating };
   if (query.skill) {
@@ -112,7 +114,7 @@ export async function listPublicWorkers(query: WorkerListQuery): Promise<PublicW
     };
   }
 
-  const [field, direction] = query.sort.split(':') as [string, 'asc' | 'desc'];
+  const [field, direction] = query.sort.split(":") as [string, "asc" | "desc"];
 
   const [total, profiles] = await Promise.all([
     prisma.workerProfile.count({ where }),
@@ -152,10 +154,10 @@ export async function getPublicWorker(id: string): Promise<PublicWorkerDetail> {
     include: {
       user: { select: { fullName: true } },
       skills: { include: { skill: { select: { name: true } } } },
-      portfolio: { orderBy: { sortOrder: 'asc' } },
+      portfolio: { orderBy: { sortOrder: "asc" } },
     },
   });
-  if (!p) throw new NotFoundError('Worker not found');
+  if (!p) throw new NotFoundError("Worker not found");
   return {
     id: p.id,
     userId: p.userId,
@@ -171,7 +173,11 @@ export async function getPublicWorker(id: string): Promise<PublicWorkerDetail> {
     yearsExperience: p.yearsExperience,
     serviceRadiusKm: p.serviceRadiusKm,
     skills: p.skills.map((ws) => ({ name: ws.skill.name, level: ws.level })),
-    portfolio: p.portfolio.map((pi) => ({ id: pi.id, imageUrl: pi.imageUrl, caption: pi.caption })),
+    portfolio: p.portfolio.map((pi) => ({
+      id: pi.id,
+      imageUrl: pi.imageUrl,
+      caption: pi.caption,
+    })),
   };
 }
 
@@ -182,18 +188,25 @@ export interface WorkerProfileWithMeta {
   profile: WorkerProfile;
   completeness: number;
   skills: { id: string; name: string; level: SkillLevel }[];
-  portfolio: { id: string; imageUrl: string; caption: string | null; sortOrder: number }[];
+  portfolio: {
+    id: string;
+    imageUrl: string;
+    caption: string | null;
+    sortOrder: number;
+  }[];
 }
 
-export async function getMyWorkerProfile(userId: string): Promise<WorkerProfileWithMeta> {
+export async function getMyWorkerProfile(
+  userId: string,
+): Promise<WorkerProfileWithMeta> {
   const profile = await prisma.workerProfile.findUnique({
     where: { userId },
     include: {
       skills: { include: { skill: true } },
-      portfolio: { orderBy: { sortOrder: 'asc' } },
+      portfolio: { orderBy: { sortOrder: "asc" } },
     },
   });
-  if (!profile) throw new NotFoundError('Worker profile not yet created');
+  if (!profile) throw new NotFoundError("Worker profile not yet created");
   return {
     profile,
     completeness: computeCompleteness({
@@ -205,7 +218,11 @@ export async function getMyWorkerProfile(userId: string): Promise<WorkerProfileW
       skillsCount: profile.skills.length,
       portfolioCount: profile.portfolio.length,
     }),
-    skills: profile.skills.map((ws) => ({ id: ws.skill.id, name: ws.skill.name, level: ws.level })),
+    skills: profile.skills.map((ws) => ({
+      id: ws.skill.id,
+      name: ws.skill.name,
+      level: ws.level,
+    })),
     portfolio: profile.portfolio.map((pi) => ({
       id: pi.id,
       imageUrl: pi.imageUrl,
@@ -215,10 +232,14 @@ export async function getMyWorkerProfile(userId: string): Promise<WorkerProfileW
   };
 }
 
-export async function upsertMyWorkerProfile(userId: string, input: WorkerProfileInput): Promise<WorkerProfileWithMeta> {
+export async function upsertMyWorkerProfile(
+  userId: string,
+  input: WorkerProfileInput,
+): Promise<WorkerProfileWithMeta> {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user || user.deletedAt) throw new UnauthenticatedError();
-  if (user.role !== 'WORKER') throw new ForbiddenError('Only workers can have worker profiles');
+  if (user.role !== "WORKER")
+    throw new ForbiddenError("Only workers can have worker profiles");
 
   const profile = await prisma.workerProfile.upsert({
     where: { userId },
@@ -233,9 +254,15 @@ export async function upsertMyWorkerProfile(userId: string, input: WorkerProfile
   });
 }
 
-export async function patchMyWorkerProfile(userId: string, input: WorkerProfileUpdateInput): Promise<WorkerProfileWithMeta> {
+export async function patchMyWorkerProfile(
+  userId: string,
+  input: WorkerProfileUpdateInput,
+): Promise<WorkerProfileWithMeta> {
   const existing = await prisma.workerProfile.findUnique({ where: { userId } });
-  if (!existing) throw new NotFoundError('Worker profile not yet created — use PUT to create');
+  if (!existing)
+    throw new NotFoundError(
+      "Worker profile not yet created — use PUT to create",
+    );
   await prisma.workerProfile.update({ where: { userId }, data: input });
   return getMyWorkerProfile(userId);
 }
@@ -243,9 +270,12 @@ export async function patchMyWorkerProfile(userId: string, input: WorkerProfileU
 // =====================================================
 // Skills
 // =====================================================
-export async function upsertMySkills(userId: string, input: UpsertSkillsInput): Promise<{ count: number }> {
+export async function upsertMySkills(
+  userId: string,
+  input: UpsertSkillsInput,
+): Promise<{ count: number }> {
   const profile = await prisma.workerProfile.findUnique({ where: { userId } });
-  if (!profile) throw new NotFoundError('Worker profile not yet created');
+  if (!profile) throw new NotFoundError("Worker profile not yet created");
 
   // Validate skill IDs exist and are active.
   const skillIds = Array.from(new Set(input.skills.map((s) => s.skillId)));
@@ -256,7 +286,8 @@ export async function upsertMySkills(userId: string, input: UpsertSkillsInput): 
     });
     const valid = new Set(existing.map((s) => s.id));
     const bad = skillIds.filter((id) => !valid.has(id));
-    if (bad.length > 0) throw new NotFoundError(`Unknown or inactive skills: ${bad.join(', ')}`);
+    if (bad.length > 0)
+      throw new NotFoundError(`Unknown or inactive skills: ${bad.join(", ")}`);
   }
 
   // Replace atomically: delete existing, then bulk insert new.
@@ -282,21 +313,34 @@ export async function upsertMySkills(userId: string, input: UpsertSkillsInput): 
 // Portfolio
 // =====================================================
 export async function listMyPortfolio(userId: string) {
-  const profile = await prisma.workerProfile.findUnique({ where: { userId }, select: { id: true } });
-  if (!profile) throw new NotFoundError('Worker profile not yet created');
+  const profile = await prisma.workerProfile.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+  if (!profile) throw new NotFoundError("Worker profile not yet created");
   return prisma.portfolioItem.findMany({
     where: { workerProfileId: profile.id },
-    orderBy: { sortOrder: 'asc' },
+    orderBy: { sortOrder: "asc" },
   });
 }
 
-export async function addPortfolioItem(userId: string, input: PortfolioCreateInput) {
-  const profile = await prisma.workerProfile.findUnique({ where: { userId }, select: { id: true } });
-  if (!profile) throw new NotFoundError('Worker profile not yet created');
+export async function addPortfolioItem(
+  userId: string,
+  input: PortfolioCreateInput,
+) {
+  const profile = await prisma.workerProfile.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+  if (!profile) throw new NotFoundError("Worker profile not yet created");
 
-  const count = await prisma.portfolioItem.count({ where: { workerProfileId: profile.id } });
+  const count = await prisma.portfolioItem.count({
+    where: { workerProfileId: profile.id },
+  });
   if (count >= MAX_PORTFOLIO_ITEMS) {
-    throw new BusinessRuleError(`Portfolio limit reached (max ${MAX_PORTFOLIO_ITEMS} items)`);
+    throw new BusinessRuleError(
+      `Portfolio limit reached (max ${MAX_PORTFOLIO_ITEMS} items)`,
+    );
   }
 
   return prisma.portfolioItem.create({
@@ -310,10 +354,14 @@ export async function addPortfolioItem(userId: string, input: PortfolioCreateInp
 }
 
 export async function deletePortfolioItem(userId: string, itemId: string) {
-  const profile = await prisma.workerProfile.findUnique({ where: { userId }, select: { id: true } });
-  if (!profile) throw new NotFoundError('Worker profile not yet created');
+  const profile = await prisma.workerProfile.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+  if (!profile) throw new NotFoundError("Worker profile not yet created");
   const item = await prisma.portfolioItem.findUnique({ where: { id: itemId } });
-  if (!item || item.workerProfileId !== profile.id) throw new NotFoundError('Portfolio item not found');
+  if (!item || item.workerProfileId !== profile.id)
+    throw new NotFoundError("Portfolio item not found");
   await prisma.portfolioItem.delete({ where: { id: itemId } });
 }
 
@@ -337,9 +385,16 @@ export async function listPendingWorkers(): Promise<PendingWorker[]> {
   // Pending = unverified profiles whose underlying user is active.
   const profiles = await prisma.workerProfile.findMany({
     where: { isVerified: false, user: { isActive: true, deletedAt: null } },
-    orderBy: { createdAt: 'asc' },
+    orderBy: { createdAt: "asc" },
     include: {
-      user: { select: { fullName: true, email: true, isActive: true, deletedAt: true } },
+      user: {
+        select: {
+          fullName: true,
+          email: true,
+          isActive: true,
+          deletedAt: true,
+        },
+      },
       skills: { select: { id: true } },
       portfolio: { select: { id: true } },
     },
@@ -367,9 +422,15 @@ export async function listPendingWorkers(): Promise<PendingWorker[]> {
   }));
 }
 
-export async function verifyWorker(adminId: string, workerProfileId: string, input: AdminVerifyWorkerInput): Promise<WorkerProfile> {
-  const profile = await prisma.workerProfile.findUnique({ where: { id: workerProfileId } });
-  if (!profile) throw new NotFoundError('Worker profile not found');
+export async function verifyWorker(
+  adminId: string,
+  workerProfileId: string,
+  input: AdminVerifyWorkerInput,
+): Promise<WorkerProfile> {
+  const profile = await prisma.workerProfile.findUnique({
+    where: { id: workerProfileId },
+  });
+  if (!profile) throw new NotFoundError("Worker profile not found");
 
   const updated = await prisma.workerProfile.update({
     where: { id: workerProfileId },
@@ -380,17 +441,26 @@ export async function verifyWorker(adminId: string, workerProfileId: string, inp
   });
 
   // Audit log entry (Phase 13/14 will add dedicated `audit_logs` table).
-  loggerAudit(adminId, 'worker.verify', 'WorkerProfile', workerProfileId, { isVerified: input.isVerified, reason: input.reason });
+  loggerAudit(adminId, "worker.verify", "WorkerProfile", workerProfileId, {
+    isVerified: input.isVerified,
+    reason: input.reason,
+  });
 
   return updated;
 }
 
-function loggerAudit(actorId: string, action: string, entityType: string, entityId: string, metadata: Record<string, unknown>): void {
+function loggerAudit(
+  actorId: string,
+  action: string,
+  entityType: string,
+  entityId: string,
+  metadata: Record<string, unknown>,
+): void {
   // Lightweight in-memory audit hook. Phase 14 will replace with DB table writes.
   // Using logger (imported lazily to avoid circular deps).
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { logger } = require('../../infra/logger/logger.js');
-  logger.info({ actorId, action, entityType, entityId, metadata }, 'audit');
+  const { logger } = require("../../infra/logger/logger.js");
+  logger.info({ actorId, action, entityType, entityId, metadata }, "audit");
 }
 
 // =====================================================

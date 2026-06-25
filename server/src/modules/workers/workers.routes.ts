@@ -1,6 +1,6 @@
-import { Router } from 'express';
-import * as controller from './workers.controller.js';
-import { validate } from '../../common/middlewares/validate.js';
+import { Router } from "express";
+import * as controller from "./workers.controller.js";
+import { validate } from "../../common/middlewares/validate.js";
 import {
   workerProfileSchema,
   workerProfileUpdateSchema,
@@ -10,54 +10,63 @@ import {
   adminVerifyWorkerSchema,
   idParamSchema,
   portfolioIdParamSchema,
-} from './workers.validators.js';
-import { requireAuth, requireRole } from '../../common/middlewares/auth.js';
+} from "./workers.validators.js";
+import { requireAuth, requireRole } from "../../common/middlewares/auth.js";
 
 const router = Router();
 
 // Public
-router.get('/', validate({ query: workerListQuerySchema }), controller.listWorkers);
-router.get('/:id', validate({ params: idParamSchema }), controller.getWorker);
+router.get(
+  "/",
+  validate({ query: workerListQuerySchema }),
+  controller.listWorkers,
+);
+router.get("/:id", validate({ params: idParamSchema }), controller.getWorker);
 
 // Worker self-service
-router.get('/me', requireAuth, requireRole('WORKER'), controller.getMyProfile);
+router.get("/me", requireAuth, requireRole("WORKER"), controller.getMyProfile);
 router.put(
-  '/me',
+  "/me",
   requireAuth,
-  requireRole('WORKER'),
+  requireRole("WORKER"),
   validate({ body: workerProfileSchema }),
   controller.upsertMyProfile,
 );
 router.patch(
-  '/me',
+  "/me",
   requireAuth,
-  requireRole('WORKER'),
+  requireRole("WORKER"),
   validate({ body: workerProfileUpdateSchema }),
   controller.patchMyProfile,
 );
 
 // Skills
 router.put(
-  '/me/skills',
+  "/me/skills",
   requireAuth,
-  requireRole('WORKER'),
+  requireRole("WORKER"),
   validate({ body: upsertSkillsSchema }),
   controller.upsertMySkills,
 );
 
 // Portfolio
-router.get('/me/portfolio', requireAuth, requireRole('WORKER'), controller.listMyPortfolio);
-router.post(
-  '/me/portfolio',
+router.get(
+  "/me/portfolio",
   requireAuth,
-  requireRole('WORKER'),
+  requireRole("WORKER"),
+  controller.listMyPortfolio,
+);
+router.post(
+  "/me/portfolio",
+  requireAuth,
+  requireRole("WORKER"),
   validate({ body: portfolioCreateSchema }),
   controller.addPortfolioItem,
 );
 router.delete(
-  '/me/portfolio/:id',
+  "/me/portfolio/:id",
   requireAuth,
-  requireRole('WORKER'),
+  requireRole("WORKER"),
   validate({ params: portfolioIdParamSchema }),
   controller.deletePortfolioItem,
 );
@@ -65,21 +74,21 @@ router.delete(
 // Admin (mounted separately at /api/v1/admin/workers)
 const adminRouter = Router();
 adminRouter.get(
-  '/pending',
+  "/pending",
   requireAuth,
-  requireRole('ADMIN'),
+  requireRole("ADMIN"),
   controller.listPendingWorkers,
 );
 adminRouter.post(
-  '/:id/verify',
+  "/:id/verify",
   requireAuth,
-  requireRole('ADMIN'),
+  requireRole("ADMIN"),
   validate({ params: idParamSchema, body: adminVerifyWorkerSchema }),
   controller.verifyWorker,
 );
 
 // Skills catalog (mounted separately at /api/v1/skills)
 const skillsRouter = Router();
-skillsRouter.get('/', controller.listSkills);
+skillsRouter.get("/", controller.listSkills);
 
 export { router as default, adminRouter, skillsRouter };

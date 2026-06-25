@@ -73,7 +73,10 @@ export default function WorkerDetailPage() {
           </div>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-4 border-t border-slate-100 pt-4 text-sm sm:grid-cols-4">
-          <Stat label="Jobs completed" value={String(worker.totalJobsCompleted)} />
+          <Stat
+            label="Jobs completed"
+            value={String(worker.totalJobsCompleted)}
+          />
           <Stat
             label="Hourly rate"
             value={

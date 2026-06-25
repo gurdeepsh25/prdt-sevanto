@@ -10,7 +10,12 @@ import { logger } from "./infra/logger/logger.js";
 import { errorHandler, notFoundHandler } from "./common/middlewares/error.js";
 import { rateLimiter } from "./common/middlewares/rateLimit.js";
 import authRouter from "./modules/auth/auth.routes.js";
-import usersRouter from "./modules/users/users.routes.js";import workersRouter, { adminRouter as workersAdminRouter, skillsRouter as workersSkillsRouter } from './modules/workers/workers.routes.js';import healthRouter from "./modules/health.routes.js";
+import usersRouter from "./modules/users/users.routes.js";
+import workersRouter, {
+  adminRouter as workersAdminRouter,
+  skillsRouter as workersSkillsRouter,
+} from "./modules/workers/workers.routes.js";
+import healthRouter from "./modules/health.routes.js";
 import { buildOpenApiDocument } from "./openapi/registry.js";
 
 export function createApp(): Express {

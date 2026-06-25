@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useApi } from "@/hooks/use-api";
-import type { MyWorkerSkill, SkillCatalogItem, SkillLevel } from "@sevanto/shared";
+import type {
+  MyWorkerSkill,
+  SkillCatalogItem,
+  SkillLevel,
+} from "@sevanto/shared";
 
 export default function SkillsPage() {
   const api = useApi();
@@ -95,7 +99,9 @@ export default function SkillsPage() {
       </header>
 
       {error && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          {error}
+        </p>
       )}
       {success && (
         <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
@@ -146,22 +152,22 @@ export default function SkillsPage() {
                 </div>
                 {current && (
                   <div className="mt-3 flex gap-1">
-                    {(["BEGINNER", "INTERMEDIATE", "EXPERT"] as SkillLevel[]).map(
-                      (lv) => (
-                        <button
-                          key={lv}
-                          type="button"
-                          onClick={() => void changeLevel(s.id, s.name, lv)}
-                          className={`flex-1 rounded-md px-2 py-1 text-xs ${
-                            current.level === lv
-                              ? "bg-brand-600 text-white"
-                              : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
-                          }`}
-                        >
-                          {lv.toLowerCase()}
-                        </button>
-                      ),
-                    )}
+                    {(
+                      ["BEGINNER", "INTERMEDIATE", "EXPERT"] as SkillLevel[]
+                    ).map((lv) => (
+                      <button
+                        key={lv}
+                        type="button"
+                        onClick={() => void changeLevel(s.id, s.name, lv)}
+                        className={`flex-1 rounded-md px-2 py-1 text-xs ${
+                          current.level === lv
+                            ? "bg-brand-600 text-white"
+                            : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
+                        }`}
+                      >
+                        {lv.toLowerCase()}
+                      </button>
+                    ))}
                   </div>
                 )}
               </li>

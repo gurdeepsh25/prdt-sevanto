@@ -106,9 +106,7 @@ export default function WorkersListPage() {
         </div>
       </section>
 
-      {loading && (
-        <p className="text-sm text-slate-500">Loading workers…</p>
-      )}
+      {loading && <p className="text-sm text-slate-500">Loading workers…</p>}
       {error && (
         <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
@@ -176,7 +174,9 @@ function WorkerCard({ worker }: { worker: PublicWorkerCard }) {
           </span>
         )}
       </div>
-      <p className="mt-3 line-clamp-2 text-sm text-slate-700">{worker.headline}</p>
+      <p className="mt-3 line-clamp-2 text-sm text-slate-700">
+        {worker.headline}
+      </p>
       <div className="mt-3 flex flex-wrap gap-1.5">
         {worker.skills.slice(0, 4).map((s) => (
           <span

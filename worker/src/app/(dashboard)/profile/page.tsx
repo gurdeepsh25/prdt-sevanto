@@ -59,14 +59,19 @@ export default function WorkerProfilePage() {
       return;
     }
     if (bio.trim().length < 50) {
-      setError("Bio must be at least 50 characters so customers can learn about you");
+      setError(
+        "Bio must be at least 50 characters so customers can learn about you",
+      );
       return;
     }
     if (city.trim().length < 2) {
       setError("City is required");
       return;
     }
-    if (hourlyRateRupees.trim() !== "" && (isNaN(parseFloat(hourlyRateRupees)) || parseFloat(hourlyRateRupees) < 0)) {
+    if (
+      hourlyRateRupees.trim() !== "" &&
+      (isNaN(parseFloat(hourlyRateRupees)) || parseFloat(hourlyRateRupees) < 0)
+    ) {
       setError("Hourly rate must be a positive number or empty");
       return;
     }
@@ -107,12 +112,22 @@ export default function WorkerProfilePage() {
             Show customers who you are, what you do, and where you work.
           </p>
         </div>
-        {data && <CompletenessBar value={data.completeness} verified={data.profile.isVerified} />}
+        {data && (
+          <CompletenessBar
+            value={data.completeness}
+            verified={data.profile.isVerified}
+          />
+        )}
       </header>
 
-      <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4 rounded-xl border border-slate-200 bg-white p-6"
+      >
         {error && (
-          <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+          <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+            {error}
+          </p>
         )}
         {success && (
           <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
@@ -120,7 +135,11 @@ export default function WorkerProfilePage() {
           </p>
         )}
 
-        <Field label="Headline" htmlFor="headline" hint="One short sentence about your specialty.">
+        <Field
+          label="Headline"
+          htmlFor="headline"
+          hint="One short sentence about your specialty."
+        >
           <input
             id="headline"
             value={headline}
@@ -158,7 +177,11 @@ export default function WorkerProfilePage() {
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
             />
           </Field>
-          <Field label="Hourly rate (₹)" htmlFor="rate" hint="Optional. Leave empty to hide.">
+          <Field
+            label="Hourly rate (₹)"
+            htmlFor="rate"
+            hint="Optional. Leave empty to hide."
+          >
             <input
               id="rate"
               type="number"
@@ -223,7 +246,10 @@ function Field({
 }) {
   return (
     <div>
-      <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-700">
+      <label
+        htmlFor={htmlFor}
+        className="block text-sm font-medium text-slate-700"
+      >
         {label}
       </label>
       {hint && <p className="mt-0.5 text-xs text-slate-500">{hint}</p>}
@@ -232,11 +258,24 @@ function Field({
   );
 }
 
-function CompletenessBar({ value, verified }: { value: number; verified: boolean }) {
-  const tone = value >= 100 ? "bg-emerald-500" : value >= 50 ? "bg-amber-500" : "bg-red-500";
+function CompletenessBar({
+  value,
+  verified,
+}: {
+  value: number;
+  verified: boolean;
+}) {
+  const tone =
+    value >= 100
+      ? "bg-emerald-500"
+      : value >= 50
+        ? "bg-amber-500"
+        : "bg-red-500";
   return (
     <div className="text-right">
-      <p className="text-xs uppercase tracking-wide text-slate-500">Profile completeness</p>
+      <p className="text-xs uppercase tracking-wide text-slate-500">
+        Profile completeness
+      </p>
       <p className="mt-0.5 text-xl font-bold text-slate-900">{value}%</p>
       <div className="mt-1 h-1.5 w-32 overflow-hidden rounded-full bg-slate-200">
         <div className={`h-full ${tone}`} style={{ width: `${value}%` }} />
