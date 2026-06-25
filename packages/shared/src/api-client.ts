@@ -34,6 +34,16 @@ import type {
   SkillCreateInput,
   SkillUpdateInput,
   PublicSkillsQuery,
+  JobDetail,
+  JobListResult,
+  JobSummary,
+  JobCreateInput,
+  JobUpdateInput,
+  JobCancelInput,
+  JobAttachmentCreateInput,
+  JobAttachmentDTO,
+  JobListQuery,
+  AdminJobRow,
 } from "./types";
 
 /**
@@ -562,5 +572,93 @@ export class ApiClient {
       `/api/v1/admin/skills/${id}`,
       { method: "PATCH", body: JSON.stringify(input) },
     );
+  }
+
+  // =====================================================
+  // Phase 5 — Jobs (Job Posting)
+  // =====================================================
+
+  createJob(input: JobCreateInput): Promise<{ job: JobDetail }> {
+    return this.request<{ job: JobDetail }>("/api/v1/jobs", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  listMyJobs(query: JobListQuery = {}): Promise<JobListResult> {
+    const params = new URLSearchParams();
+    if (query.status) params.set("status", query.status);
+    if (query.page) params.set("page", String(query.page));
+    if (query.pageSize) params.set("pageSize", String(query.pageSize));
+    if (query.sort) params.set("sort", query.sort);
+    const qs = params.toString();
+    return this.request<JobListResult>(`/api/v1/jobs${qs ? `?${qs}` : ""}`);
+  }
+
+  getMyJob(id: string): Promise<{ job: JobDetail }> {
+    return this.request<{ job: JobDetail }>(`/api/v1/jobs/${id}`);
+  }
+
+  updateMyJob(id: string, input: JobUpdateInput): Promise<{ job: JobDetail }> {
+    return this.request<{ job: JobDetail }>(`/api/v1/jobs/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    });
+  }
+
+  deleteMyJob(id: string): Promise<{ ok: true }> {
+    return this.request<{ ok: true }>(`/api/v1/jobs/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  cancelMyJob(
+    id: string,
+    input: JobCancelInput = {},
+  ): Promise<{ job: JobDetail }> {
+    return this.request<{ job: JobDetail }>(`/api/v1/jobs/${id}/cancel`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  addJobAttachment(
+    id: string,
+    input: JobAttachmentCreateInput,
+  ): Promise<{ attachment: JobAttachmentDTO }> {
+    return this.request<{ attachment: JobAttachmentDTO }>(
+      `/api/v1/jobs/${id}/attachments`,
+      { method: "POST", body: JSON.stringify(input) },
+    );
+  }
+
+  deleteJobAttachment(id: string, attachmentId: string): Promise<{ ok: true }> {
+    return this.request<{ ok: true }>(
+      `/api/v1/jobs/${id}/attachments/${attachmentId}`,
+      { method: "DELETE" },
+    );
+  }
+
+  // ---- Admin: jobs (read-only in Phase 5) ----
+  adminListJobs(
+    query: JobListQuery = {},
+  ): Promise<{
+    items: AdminJobRow[];
+    total: number;
+    page: number;
+    pageSize: number;
+  }> {
+    const params = new URLSearchParams();
+    if (query.status) params.set("status", query.status);
+    if (query.page) params.set("page", String(query.page));
+    if (query.pageSize) params.set("pageSize", String(query.pageSize));
+    if (query.sort) params.set("sort", query.sort);
+    const qs = params.toString();
+    return this.request<{
+      items: AdminJobRow[];
+      total: number;
+      page: number;
+      pageSize: number;
+    }>(`/api/v1/admin/jobs${qs ? `?${qs}` : ""}`);
   }
 }

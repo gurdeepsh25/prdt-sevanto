@@ -44,6 +44,7 @@ model User {
   emailVerifications EmailVerification[]
   addresses          UserAddress[]
   workerProfile      WorkerProfile?
+  jobs               Job[]
 
   @@index([role])
   @@map("users")
@@ -70,6 +71,7 @@ model UserAddress {
   updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobs Job[]
 
   @@index([userId])
   @@map("user_addresses")
@@ -181,6 +183,7 @@ model Category {
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   subcategories Subcategory[]
+  jobs          Job[]
 
   @@index([isActive, sortOrder])
   @@map("categories")
@@ -198,6 +201,7 @@ model Subcategory {
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  jobs     Job[]
   skills   Skill[]
 
   @@unique([categoryId, slug])
@@ -267,4 +271,77 @@ model PortfolioItem {
 
   @@index([workerProfileId])
   @@map("portfolio_items")
+}
+
+// =====================================================
+// Jobs (Phase 5 — Job Posting)
+// =====================================================
+
+enum JobStatus {
+  DRAFT
+  OPEN
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  EXPIRED
+}
+
+enum JobUrgency {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model Job {
+  id             String    @id @default(uuid()) @db.Uuid
+  customerId     String    @map("customer_id") @db.Uuid
+  categoryId     String    @map("category_id") @db.Uuid
+  subcategoryId  String?   @map("subcategory_id") @db.Uuid
+  addressId      String    @map("address_id") @db.Uuid
+
+  title          String    @db.VarChar(120)
+  description    String    @db.Text
+  budgetMin      Int?      @map("budget_min") // minor units
+  budgetMax      Int?      @map("budget_max") // minor units
+  currency       String    @default("INR") @db.VarChar(3)
+  urgency        JobUrgency @default(NORMAL)
+  scheduledFor   DateTime? @map("scheduled_for") @db.Timestamptz(3)
+  city           String
+  status         JobStatus  @default(OPEN)
+  cancelledAt    DateTime?  @map("cancelled_at") @db.Timestamptz(3)
+  cancelReason   String?    @map("cancel_reason") @db.VarChar(280)
+  deletedAt      DateTime?  @map("deleted_at") @db.Timestamptz(3)
+
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  customer       User              @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  category       Category          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  subcategory    Subcategory?      @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+  address        UserAddress       @relation(fields: [addressId], references: [id], onDelete: Restrict)
+  attachments    JobAttachment[]
+
+  @@index([customerId])
+  @@index([categoryId])
+  @@index([subcategoryId])
+  @@index([city])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("jobs")
+}
+
+model JobAttachment {
+  id        String   @id @default(uuid()) @db.Uuid
+  jobId     String   @map("job_id") @db.Uuid
+  url       String   @db.VarChar(2048)
+  caption   String?  @db.VarChar(280)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+  @@map("job_attachments")
 }

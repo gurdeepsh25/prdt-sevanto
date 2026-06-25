@@ -398,3 +398,111 @@ export interface PublicSkillsQuery {
   categorySlug?: string;
   includeInactive?: boolean;
 }
+
+// =====================================================
+// Phase 5 — Jobs (Job Posting)
+// =====================================================
+
+export type JobStatus =
+  | "DRAFT"
+  | "OPEN"
+  | "ASSIGNED"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "EXPIRED";
+
+export type JobUrgency = "LOW" | "NORMAL" | "HIGH" | "URGENT";
+
+export interface JobAttachmentDTO {
+  id: string;
+  url: string;
+  caption: string | null;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export interface JobSummary {
+  id: string;
+  customerId: string;
+  title: string;
+  status: JobStatus;
+  urgency: JobUrgency;
+  city: string;
+  categoryId: string;
+  categoryName: string;
+  subcategoryId: string | null;
+  subcategoryName: string | null;
+  budgetMin: number | null;
+  budgetMax: number | null;
+  currency: string;
+  scheduledFor: string | null;
+  createdAt: string;
+  updatedAt: string;
+  attachmentCount: number;
+}
+
+export interface JobDetail extends JobSummary {
+  description: string;
+  addressId: string;
+  cancelledAt: string | null;
+  cancelReason: string | null;
+  attachments: JobAttachmentDTO[];
+}
+
+export interface JobListResult {
+  items: JobSummary[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface JobCreateInput {
+  title: string;
+  description: string;
+  categoryId: string;
+  subcategoryId?: string | null;
+  addressId: string;
+  budgetMin?: number | null;
+  budgetMax?: number | null;
+  currency?: string;
+  urgency?: JobUrgency;
+  scheduledFor?: string | null;
+  status?: Extract<JobStatus, "DRAFT" | "OPEN">;
+}
+
+export interface JobUpdateInput {
+  title?: string;
+  description?: string;
+  categoryId?: string;
+  subcategoryId?: string | null;
+  addressId?: string;
+  budgetMin?: number | null;
+  budgetMax?: number | null;
+  currency?: string;
+  urgency?: JobUrgency;
+  scheduledFor?: string | null;
+  status?: Extract<JobStatus, "DRAFT" | "OPEN">;
+}
+
+export interface JobCancelInput {
+  reason?: string;
+}
+
+export interface JobAttachmentCreateInput {
+  url: string;
+  caption?: string | null;
+  sortOrder?: number;
+}
+
+export interface JobListQuery {
+  status?: JobStatus;
+  page?: number;
+  pageSize?: number;
+  sort?: "createdAt:desc" | "createdAt:asc" | "scheduledFor:asc";
+}
+
+export interface AdminJobRow extends JobSummary {
+  customerName: string;
+  customerEmail: string;
+}

@@ -42,6 +42,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const nav = [
     { href: "/dashboard", label: "Overview" },
     { href: "/users", label: "Users" },
+    { href: "/jobs", label: "Jobs" },
     { href: "/workers/pending", label: "Worker Verification" },
     { href: "/categories", label: "Categories" },
   ];

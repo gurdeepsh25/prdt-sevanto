@@ -17,7 +17,7 @@
 |     2 | User Management                  | Completed | 2026-06-24 | 2026-06-24 |
 |     3 | Worker Profiles                  | Completed | 2026-06-24 | 2026-06-24 |
 |     4 | Job Categories                   | Completed | 2026-06-25 | 2026-06-25 |
-|     5 | Job Posting                      | Pending   | —          | —          |
+|     5 | Job Posting                      | Completed | 2026-06-25 | 2026-06-25 |
 |     6 | Job Discovery                    | Pending   | —          | —          |
 |     7 | Job Applications                 | Pending   | —          | —          |
 |     8 | Job Assignment                   | Pending   | —          | —          |
@@ -43,6 +43,39 @@
 | 0.5 | Approval gate (wait for sign-off before any code) | —     | Completed |
 
 ## Active Phase
+
+### ✅ Phase 5 — Job Posting — Completed 2026-06-25
+
+| ID   | Task                                                                                                                                                 | Component      | Status    |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | --------- |
+| 5.1  | Prisma: add `Job` + `JobAttachment` models + `JobStatus` / `JobUrgency` enums; reverse relations on `User`, `Category`, `Subcategory`, `UserAddress` | server/db      | Completed |
+| 5.2  | Migration `005_jobs` (PostgreSQL enum + tables + indexes + CHECK constraints) + `prisma generate`                                                    | server/db      | Completed |
+| 5.3  | `jobs.validators.ts` — Zod schemas (create / update / cancel / attachment / query) + state-machine constants                                         | server/api     | Completed |
+| 5.4  | `jobs.service.ts` — CRUD + cancel + attachments + ownership / state-machine enforcement                                                              | server/api     | Completed |
+| 5.5  | `jobs.controller.ts` + customer router + admin router (`/api/v1/admin/jobs`)                                                                         | server/api     | Completed |
+| 5.6  | Routers wired into `app.ts`                                                                                                                          | server/app     | Completed |
+| 5.7  | OpenAPI registration for all 8 customer + 1 admin endpoints (incl. `JobSummary` / `JobDetail` schemas)                                               | server/openapi | Completed |
+| 5.8  | Unit tests: 37 new validator tests (137/137 total)                                                                                                   | server/tests   | Completed |
+| 5.9  | Customer app: `/my-jobs` list with status filter                                                                                                     | client         | Completed |
+| 5.10 | Customer app: `/my-jobs/new` 5-step wizard (Category → Details → Budget → Address → Review)                                                          | client         | Completed |
+| 5.11 | Customer app: `/my-jobs/[id]` detail with status timeline + attach / cancel / delete                                                                 | client         | Completed |
+| 5.12 | Admin app: `/jobs` read-only table (status filter, customer info)                                                                                    | admin          | Completed |
+| 5.13 | Shared package: types + 7 ApiClient methods (CRUD + cancel + attachments + admin list)                                                               | shared         | Completed |
+| 5.14 | Build + typecheck all packages green                                                                                                                 | all            | Completed |
+| 5.15 | README + tracker updated                                                                                                                             | docs           | Completed |
+
+### Verification (all green)
+
+| Check                                        | Result                                                           |
+| -------------------------------------------- | ---------------------------------------------------------------- |
+| `prisma generate`                            | ✅ Job + JobAttachment + JobStatus + JobUrgency compiled         |
+| `npm run typecheck` (server, shared, 3 apps) | ✅ no errors                                                     |
+| `npm run build` (server)                     | ✅ compiles to `dist/`                                           |
+| `npm run build` (client)                     | ✅ 17 routes (incl. `/my-jobs`, `/my-jobs/new`, `/my-jobs/[id]`) |
+| `npm run build` (worker)                     | ✅ 12 routes (no UI change required by spec)                     |
+| `npm run build` (admin)                      | ✅ 10 routes (incl. `/jobs`)                                     |
+| `npm run test:unit` (server)                 | ✅ **137 / 137** tests pass (37 new for Phase 5)                 |
+| Phase 5 endpoints registered                 | ✅ 8 customer + 1 admin = 9 new endpoints                        |
 
 ### ✅ Phase 4 — Job Categories — Completed 2026-06-25
 
@@ -226,3 +259,4 @@
   - Cleaned duplicate Phase 2 task table in tracker.
 - 2026-06-24 — **Phase 3 complete**: backend (12 worker endpoints + Skill catalog + admin verify queue) + 3 frontends (customer `/workers` list + detail, worker `/profile` + `/skills` + `/portfolio`, admin `/workers/pending`). 73/73 unit tests pass. Endpoint audit shows 32/32 implemented (12 new worker routes added).
 - 2026-06-25 — **Phase 4 complete**: backend (Category + Subcategory + Skill taxonomy, 12 new endpoints) + 3 frontends (customer `/categories` + `/categories/[slug]`, worker `/skills` filterable by category, admin `/categories` management). 100/100 unit tests pass (27 new). README + tracker updated.
+- 2026-06-25 — **Phase 5 complete**: backend (Job + JobAttachment + state machine, 9 new endpoints) + 3 frontends (customer `/my-jobs` list + `/my-jobs/new` 5-step wizard + `/my-jobs/[id]` detail, admin `/jobs` read-only). 137/137 unit tests pass (37 new). README + tracker updated. (Total: 53 endpoints across 12 modules.)

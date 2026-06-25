@@ -942,3 +942,319 @@ registry.registerPath({
   },
   responses: { 200: { description: "OK" } },
 });
+
+// =====================================================
+// Phase 5 — Jobs (Job Posting)
+// =====================================================
+
+const JobAttachmentSchema = z
+  .object({
+    id: z.string().uuid(),
+    url: z.string().url(),
+    caption: z.string().nullable().optional(),
+    sortOrder: z.number().int(),
+    createdAt: z.string().datetime(),
+  })
+  .openapi("JobAttachment");
+
+const JobSummarySchema = z
+  .object({
+    id: z.string().uuid(),
+    customerId: z.string().uuid(),
+    title: z.string(),
+    status: z.enum([
+      "DRAFT",
+      "OPEN",
+      "ASSIGNED",
+      "IN_PROGRESS",
+      "COMPLETED",
+      "CANCELLED",
+      "EXPIRED",
+    ]),
+    urgency: z.enum(["LOW", "NORMAL", "HIGH", "URGENT"]),
+    city: z.string(),
+    categoryId: z.string().uuid(),
+    categoryName: z.string(),
+    subcategoryId: z.string().uuid().nullable().optional(),
+    subcategoryName: z.string().nullable().optional(),
+    budgetMin: z.number().int().nullable().optional(),
+    budgetMax: z.number().int().nullable().optional(),
+    currency: z.string(),
+    scheduledFor: z.string().datetime().nullable().optional(),
+    createdAt: z.string().datetime(),
+    updatedAt: z.string().datetime(),
+    attachmentCount: z.number().int(),
+  })
+  .openapi("JobSummary");
+
+const JobDetailSchema = JobSummarySchema.extend({
+  description: z.string(),
+  addressId: z.string().uuid(),
+  cancelledAt: z.string().datetime().nullable().optional(),
+  cancelReason: z.string().nullable().optional(),
+  attachments: z.array(JobAttachmentSchema),
+}).openapi("JobDetail");
+
+// Customer — jobs
+registry.registerPath({
+  method: "post",
+  path: "/jobs",
+  summary: "Customer: create a job post",
+  tags: ["Jobs"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            title: z.string().min(5).max(120),
+            description: z.string().min(20).max(4000),
+            categoryId: z.string().uuid(),
+            subcategoryId: z.string().uuid().nullable().optional(),
+            addressId: z.string().uuid(),
+            budgetMin: z.number().int().nonnegative().nullable().optional(),
+            budgetMax: z.number().int().nonnegative().nullable().optional(),
+            currency: z.string().length(3).optional(),
+            urgency: z.enum(["LOW", "NORMAL", "HIGH", "URGENT"]).optional(),
+            scheduledFor: z.string().datetime().nullable().optional(),
+            status: z.enum(["DRAFT", "OPEN"]).optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: "Created",
+      content: {
+        "application/json": { schema: z.object({ job: JobDetailSchema }) },
+      },
+    },
+    400: { description: "Validation" },
+    403: { description: "Forbidden (address ownership)" },
+    404: { description: "Category / subcategory / address not found" },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/jobs",
+  summary: "Customer: list my jobs",
+  tags: ["Jobs"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    query: z.object({
+      status: z
+        .enum([
+          "DRAFT",
+          "OPEN",
+          "ASSIGNED",
+          "IN_PROGRESS",
+          "COMPLETED",
+          "CANCELLED",
+          "EXPIRED",
+        ])
+        .optional(),
+      page: z.coerce.number().int().positive().optional(),
+      pageSize: z.coerce.number().int().positive().max(100).optional(),
+      sort: z
+        .enum(["createdAt:desc", "createdAt:asc", "scheduledFor:asc"])
+        .optional(),
+    }),
+  },
+  responses: {
+    200: {
+      description: "OK",
+      content: {
+        "application/json": {
+          schema: z.object({
+            items: z.array(JobSummarySchema),
+            total: z.number().int(),
+            page: z.number().int(),
+            pageSize: z.number().int(),
+          }),
+        },
+      },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/jobs/{id}",
+  summary: "Owner / Admin: get job detail",
+  tags: ["Jobs"],
+  security: [{ bearerAuth: [] }],
+  request: { params: z.object({ id: z.string().uuid() }) },
+  responses: {
+    200: {
+      description: "OK",
+      content: {
+        "application/json": { schema: z.object({ job: JobDetailSchema }) },
+      },
+    },
+    404: { description: "Not found" },
+  },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/jobs/{id}",
+  summary: "Owner: update job (only in DRAFT / OPEN)",
+  tags: ["Jobs"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: z.object({ id: z.string().uuid() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            title: z.string().min(5).max(120).optional(),
+            description: z.string().min(20).max(4000).optional(),
+            categoryId: z.string().uuid().optional(),
+            subcategoryId: z.string().uuid().nullable().optional(),
+            addressId: z.string().uuid().optional(),
+            budgetMin: z.number().int().nonnegative().nullable().optional(),
+            budgetMax: z.number().int().nonnegative().nullable().optional(),
+            currency: z.string().length(3).optional(),
+            urgency: z.enum(["LOW", "NORMAL", "HIGH", "URGENT"]).optional(),
+            scheduledFor: z.string().datetime().nullable().optional(),
+            status: z.enum(["DRAFT", "OPEN"]).optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    200: { description: "OK" },
+    404: { description: "Not found" },
+    422: { description: "Job not editable in current status" },
+  },
+});
+
+registry.registerPath({
+  method: "delete",
+  path: "/jobs/{id}",
+  summary: "Owner: soft-delete job (only in DRAFT / OPEN)",
+  tags: ["Jobs"],
+  security: [{ bearerAuth: [] }],
+  request: { params: z.object({ id: z.string().uuid() }) },
+  responses: { 200: { description: "OK" } },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/jobs/{id}/cancel",
+  summary: "Owner / Admin: cancel a job",
+  tags: ["Jobs"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: z.object({ id: z.string().uuid() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            reason: z.string().max(280).optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: { 200: { description: "OK" } },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/jobs/{id}/attachments",
+  summary: "Owner: add an attachment",
+  tags: ["Jobs"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: z.object({ id: z.string().uuid() }),
+    body: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            url: z.string().url().max(2048),
+            caption: z.string().max(280).nullable().optional(),
+            sortOrder: z.number().int().min(0).optional(),
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: "Created",
+      content: {
+        "application/json": {
+          schema: z.object({ attachment: JobAttachmentSchema }),
+        },
+      },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "delete",
+  path: "/jobs/{id}/attachments/{attachmentId}",
+  summary: "Owner: remove an attachment",
+  tags: ["Jobs"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: z.object({
+      id: z.string().uuid(),
+      attachmentId: z.string().uuid(),
+    }),
+  },
+  responses: { 200: { description: "OK" } },
+});
+
+// Admin — read-only jobs list
+registry.registerPath({
+  method: "get",
+  path: "/admin/jobs",
+  summary: "Admin: list jobs (read-only in Phase 5)",
+  tags: ["Admin"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    query: z.object({
+      status: z
+        .enum([
+          "DRAFT",
+          "OPEN",
+          "ASSIGNED",
+          "IN_PROGRESS",
+          "COMPLETED",
+          "CANCELLED",
+          "EXPIRED",
+        ])
+        .optional(),
+      page: z.coerce.number().int().positive().optional(),
+      pageSize: z.coerce.number().int().positive().max(100).optional(),
+      sort: z
+        .enum(["createdAt:desc", "createdAt:asc", "scheduledFor:asc"])
+        .optional(),
+    }),
+  },
+  responses: {
+    200: {
+      description: "OK",
+      content: {
+        "application/json": {
+          schema: z.object({
+            items: z.array(
+              JobSummarySchema.extend({
+                customerName: z.string(),
+                customerEmail: z.string(),
+              }),
+            ),
+            total: z.number().int(),
+            page: z.number().int(),
+            pageSize: z.number().int(),
+          }),
+        },
+      },
+    },
+  },
+});

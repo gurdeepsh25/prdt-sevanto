@@ -17,6 +17,7 @@
 - [Phase 2 — User Management](#phase-2--user-management)
 - [Phase 3 — Worker Profiles](#phase-3--worker-profiles)
 - [Phase 4 — Job Categories](#phase-4--job-categories)
+- [Phase 5 — Job Posting](#phase-5--job-posting)
 - [API Surface](#api-surface)
 - [Architecture](#architecture)
 - [Security](#security)
@@ -52,7 +53,7 @@ The repo follows an **MVP-first**, **backend-first**, **modular monolith** archi
 |     2 | User Management            | ✅ Completed | 2026-06-24 | 2026-06-24 |
 |     3 | Worker Profiles            | ✅ Completed | 2026-06-24 | 2026-06-24 |
 |     4 | Job Categories             | ✅ Completed | 2026-06-25 | 2026-06-25 |
-|     5 | Job Posting                | 🟡 Pending   | —          | —          |
+|     5 | Job Posting                | ✅ Completed | 2026-06-25 | 2026-06-25 |
 |     6 | Job Discovery              | 🟡 Pending   | —          | —          |
 |     7 | Job Applications           | 🟡 Pending   | —          | —          |
 |     8 | Job Assignment             | 🟡 Pending   | —          | —          |
@@ -511,10 +512,13 @@ A managed taxonomy (`Category → Subcategory → Skill`) that powers filtering,
 | **Categories (public)** | list, get-by-slug, subcategories-for-category |
 | **Categories (admin)** | list, create, update, add-subcategory, update-subcategory |
 | **Skills (admin)** | create, update |
+| **Jobs (customer)** | create, list-mine, get-mine, update, delete, cancel, add-attachment, delete-attachment |
+| **Jobs (admin)** | list |
 | **Health** | `/healthz`, `/readyz`, `/version` |
 
-**Total**: 44 endpoints across 10slug/subcategories`         | public | Active subcategories for a category                                    |
-|`GET` |`/api/v1/skills`                                 | public | Active skills (optional`?categoryId=…`/`?subcategoryId=…` filters) |
+**Total**: 53 endpoints across 12 modules.
+
+---
 
 #### Admin — categories
 
@@ -573,6 +577,79 @@ Other              → Miscellaneous
   - `/skills` — now grouped by **category pills** at the top; selecting a category filters the visible skills
 - **Admin** (`admin/`):
   - `/categories` — create categories, toggle active/inactive, add subcategories inline, toggle subcategory active state
+
+---
+
+## Phase 5 — Job Posting
+
+**Status**: ✅ Complete
+
+Customers can post jobs (via a 5-step wizard), edit / cancel / soft-delete them while they are still in `DRAFT` or `OPEN`, attach reference images by URL, and track their progress through the lifecycle.
+
+### Backend endpoints (8/8)
+
+#### Customer — `/api/v1/jobs`
+
+| Method   | Path                                         | Auth     | Purpose                                             |
+| -------- | -------------------------------------------- | -------- | --------------------------------------------------- |
+| `POST`   | `/api/v1/jobs`                               | CUSTOMER | Create a job (defaults to `OPEN`, optional `DRAFT`) |
+| `GET`    | `/api/v1/jobs`                               | CUSTOMER | List my jobs (filters: `status`, pagination, sort)  |
+| `GET`    | `/api/v1/jobs/:id`                           | CUSTOMER | Job detail (owner / admin only)                     |
+| `PATCH`  | `/api/v1/jobs/:id`                           | CUSTOMER | Update — only allowed in `DRAFT` / `OPEN`           |
+| `DELETE` | `/api/v1/jobs/:id`                           | CUSTOMER | Soft-delete — only allowed in `DRAFT` / `OPEN`      |
+| `POST`   | `/api/v1/jobs/:id/cancel`                    | CUSTOMER | Cancel (sets status `CANCELLED` + reason)           |
+| `POST`   | `/api/v1/jobs/:id/attachments`               | CUSTOMER | Add attachment (URL + optional caption)             |
+| `DELETE` | `/api/v1/jobs/:id/attachments/:attachmentId` | CUSTOMER | Remove attachment (only in `DRAFT` / `OPEN`)        |
+
+#### Admin — `/api/v1/admin/jobs` (read-only)
+
+| Method | Path                 | Auth  | Purpose                                         |
+| ------ | -------------------- | ----- | ----------------------------------------------- |
+| `GET`  | `/api/v1/admin/jobs` | ADMIN | All jobs (incl. customer name + email, filters) |
+
+### Validation rules
+
+- **`title`**: 5–120 chars
+- **`description`**: 20–4000 chars
+- **`budgetMin` / `budgetMax`**: non-negative integers in **minor units** (e.g. paise); `min ≤ max`; either may be `null` for open budget
+- **`categoryId`**: required, must be an **active** category
+- **`subcategoryId`**: optional; when provided, must belong to the chosen category and be active
+- **`addressId`**: required, must **belong to the caller** (ownership enforced)
+- **`urgency`**: `LOW | NORMAL | HIGH | URGENT` (default `NORMAL`)
+- **`scheduledFor`**: optional ISO datetime; if set, must be in the future
+- **`status` on create**: `DRAFT` | `OPEN` (default `OPEN`)
+
+### State machine
+
+```
+   ┌─────┐  publish   ┌──────┐  assign   ┌──────────┐  start   ┌────────────┐  complete   ┌───────────┐
+   │DRAFT│ ─────────▶ │ OPEN │ ────────▶ │ ASSIGNED │ ───────▶ │ IN_PROGRESS│ ──────────▶ │ COMPLETED │
+   └─────┘            └──────┘           └──────────┘          └────────────┘             └───────────┘
+       │                 │                    │                     │
+       └─────────────────┴────────────────────┴─────────────────────┴─▶ cancelJob() ──▶ CANCELLED
+```
+
+- **Customer edits** allowed only in `DRAFT` / `OPEN`
+- **Customer soft-deletes** allowed only in `DRAFT` / `OPEN`
+- **Cancellation** allowed in `DRAFT | OPEN | ASSIGNED | IN_PROGRESS`
+- `completed` / `cancelled` / `expired` are terminal
+
+### Security highlights
+
+- **`requireRole('CUSTOMER')`** gates every job-creation / mutation route
+- **Address ownership** is verified server-side (`ForbiddenError` if a customer tries to use another user's address)
+- **Subcategory integrity** — subcategory must belong to the chosen category
+- **Soft-delete** hides the job from all reads (`deletedAt IS NULL` filter on every list / get)
+- **Admin read-only** in Phase 5 — admins cannot yet mutate jobs (moderation arrives in a later phase)
+
+### Frontend pages
+
+- **Customer** (`client/`):
+  - `/my-jobs` — paginated list of your jobs with **status filter pills** (All / Draft / Open / Assigned / In Progress / Completed / Cancelled)
+  - `/my-jobs/new` — **5-step wizard** (Category → Details → Budget → Address → Review) with optional save-as-draft
+  - `/my-jobs/[id]` — full job detail with status timeline, attachment list (add / remove in editable states), cancel CTA, soft-delete CTA
+- **Admin** (`admin/`):
+  - `/jobs` — read-only table of all jobs (filterable by status) with customer name + email
 
 ---
 
@@ -681,7 +758,8 @@ Sevanto follows defense-in-depth at every layer. The full checklist lives in [do
 | `tests/unit/workers.validators.test.ts`    |                                               24 | ✅              |
 | `tests/unit/workers.service.test.ts`       |                                                7 | ✅              |
 | `tests/unit/categories.validators.test.ts` |                                               27 | ✅              |
-| **Total unit**                             |                                          **100** | **✅ all pass** |
+| `tests/unit/jobs.validators.test.ts`       |                                               37 | ✅              |
+| **Total unit**                             |                                          **137** | **✅ all pass** |
 | `tests/integration/auth.test.ts`           | scaffolded (Supertest, gated by `describe.skip`) |
 
 ### Running tests
@@ -822,7 +900,8 @@ npm run lint                 # next lint
 - ✅ Phase 2 — User Management
 - ✅ Phase 3 — Worker Profiles (skills, portfolio, admin verification queue)
 - ✅ Phase 4 — Job Categories (managed taxonomy: Category → Subcategory → Skill)
-- 🟡 Phase 5 — Job Posting
+- ✅ Phase 5 — Job Posting (customer wizard, status machine, attachments, admin read-only)
+- 🟡 Phase 6 — Job Discovery
 - 🟡 Phase 6 — Job Discovery
 - 🟡 Phase 7 — Job Applications
 - 🟡 Phase 8 — Job Assignment
@@ -865,4 +944,4 @@ Every feature ships with: DB schema, API documentation, validators, security rev
 
 ---
 
-**Built with care. Phase 4 complete — 44/44 endpoints live, 100/100 tests green, ready for Job Posting.**
+**Built with care. Phase 5 complete — 53/53 endpoints live, 137/137 tests green, ready for Job Discovery.**

@@ -42,6 +42,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     { href: "/dashboard", label: "Overview" },
     { href: "/workers", label: "Find Workers" },
     { href: "/categories", label: "Categories" },
+    { href: "/my-jobs", label: "My Jobs" },
     { href: "/profile", label: "Profile" },
     { href: "/settings", label: "Settings" },
   ];
