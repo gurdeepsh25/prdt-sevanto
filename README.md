@@ -504,33 +504,34 @@ A managed taxonomy (`Category → Subcategory → Skill`) that powers filtering,
 ### Backend endpoints (12/12)
 
 #### Public — categories & subcategories
-(filterable by category / subcategory)                                                     |
-| **Workers (self)**    | get-my, upsert, patch, replace-skills, list/add/delete-portfolio                                   |
-| **Workers (admin)**   | pending, verify                                                                                    |
-| **Categories (public)** | list, get-by-slug, subcategories-for-category                                                     |
-| **Categories (admin)** | list, create, update, add-subcategory, update-subcategory                                          |
-| **Skills (admin)**    | create, update                                                                                     |
-| **Health**            | `/healthz`, `/readyz`, `/version`                                                                  |
 
-**Total**: 44 endpoints across 10slug/subcategories`          | public | Active subcategories for a category                                    |
-| `GET`  | `/api/v1/skills`                                  | public | Active skills (optional `?categoryId=…` / `?subcategoryId=…` filters)  |
+(filterable by category / subcategory) |
+| **Workers (self)** | get-my, upsert, patch, replace-skills, list/add/delete-portfolio |
+| **Workers (admin)** | pending, verify |
+| **Categories (public)** | list, get-by-slug, subcategories-for-category |
+| **Categories (admin)** | list, create, update, add-subcategory, update-subcategory |
+| **Skills (admin)** | create, update |
+| **Health** | `/healthz`, `/readyz`, `/version` |
+
+**Total**: 44 endpoints across 10slug/subcategories`         | public | Active subcategories for a category                                    |
+|`GET` |`/api/v1/skills`                                 | public | Active skills (optional`?categoryId=…`/`?subcategoryId=…` filters) |
 
 #### Admin — categories
 
-| Method | Path                                              | Auth  | Purpose                                              |
-| ------ | ------------------------------------------------- | ----- | ---------------------------------------------------- |
-| `GET`  | `/api/v1/admin/categories`                        | ADMIN | All categories (incl. inactive) + subcategories     |
-| `POST` | `/api/v1/admin/categories`                        | ADMIN | Create category                                      |
-| `PATCH`| `/api/v1/admin/categories/:id`                    | ADMIN | Update / activate / deactivate                      |
-| `POST` | `/api/v1/admin/categories/:id/subcategories`      | ADMIN | Add subcategory                                      |
-| `PATCH`| `/api/v1/admin/subcategories/:id`                 | ADMIN | Update subcategory (name / order / isActive)         |
+| Method  | Path                                         | Auth  | Purpose                                         |
+| ------- | -------------------------------------------- | ----- | ----------------------------------------------- |
+| `GET`   | `/api/v1/admin/categories`                   | ADMIN | All categories (incl. inactive) + subcategories |
+| `POST`  | `/api/v1/admin/categories`                   | ADMIN | Create category                                 |
+| `PATCH` | `/api/v1/admin/categories/:id`               | ADMIN | Update / activate / deactivate                  |
+| `POST`  | `/api/v1/admin/categories/:id/subcategories` | ADMIN | Add subcategory                                 |
+| `PATCH` | `/api/v1/admin/subcategories/:id`            | ADMIN | Update subcategory (name / order / isActive)    |
 
 #### Admin — skills
 
-| Method | Path                              | Auth  | Purpose                                              |
-| ------ | --------------------------------- | ----- | ---------------------------------------------------- |
-| `POST` | `/api/v1/admin/skills`            | ADMIN | Create skill (optionally linked to a subcategory)    |
-| `PATCH`| `/api/v1/admin/skills/:id`        | ADMIN | Update / relink / deactivate                         |
+| Method  | Path                       | Auth  | Purpose                                           |
+| ------- | -------------------------- | ----- | ------------------------------------------------- |
+| `POST`  | `/api/v1/admin/skills`     | ADMIN | Create skill (optionally linked to a subcategory) |
+| `PATCH` | `/api/v1/admin/skills/:id` | ADMIN | Update / relink / deactivate                      |
 
 ### Validation rules
 
@@ -669,19 +670,19 @@ Sevanto follows defense-in-depth at every layer. The full checklist lives in [do
 
 ### Current coverage
 
-| Suite                                   |                                            Tests | Status          |
-| --------------------------------------- | -----------------------------------------------: | --------------- |
-| `tests/unit/jwt.test.ts`                |                                                6 | ✅              |
-| `tests/unit/password.test.ts`           |                                                3 | ✅              |
-| `tests/unit/tokens.test.ts`             |                                                2 | ✅              |
-| `tests/unit/errors.test.ts`             |                                                2 | ✅              |
-| `tests/unit/validators.test.ts`         |                                               10 | ✅              |
-| `tests/unit/users.validators.test.ts`   |                                               19 | ✅              |
-| `tests/unit/workers.validators.test.ts` |                                               24 | ✅              |
-| `tests/unit/workers.service.test.ts`    |                                                7 | ✅              |
-| `tests/unit/categories.validators.test.ts` |                                             27 | ✅              |
-| **Total unit**                          |                                          **100** | **✅ all pass** |
-| `tests/integration/auth.test.ts`        | scaffolded (Supertest, gated by `describe.skip`) |
+| Suite                                      |                                            Tests | Status          |
+| ------------------------------------------ | -----------------------------------------------: | --------------- |
+| `tests/unit/jwt.test.ts`                   |                                                6 | ✅              |
+| `tests/unit/password.test.ts`              |                                                3 | ✅              |
+| `tests/unit/tokens.test.ts`                |                                                2 | ✅              |
+| `tests/unit/errors.test.ts`                |                                                2 | ✅              |
+| `tests/unit/validators.test.ts`            |                                               10 | ✅              |
+| `tests/unit/users.validators.test.ts`      |                                               19 | ✅              |
+| `tests/unit/workers.validators.test.ts`    |                                               24 | ✅              |
+| `tests/unit/workers.service.test.ts`       |                                                7 | ✅              |
+| `tests/unit/categories.validators.test.ts` |                                               27 | ✅              |
+| **Total unit**                             |                                          **100** | **✅ all pass** |
+| `tests/integration/auth.test.ts`           | scaffolded (Supertest, gated by `describe.skip`) |
 
 ### Running tests
 

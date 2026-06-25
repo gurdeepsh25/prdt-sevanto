@@ -36,9 +36,21 @@ async function seedTaxonomy(): Promise<void> {
         { name: "Pipe Fitting", slug: "pipe-fitting", subSlug: "plumbing" },
         { name: "Drain Cleaning", slug: "drain-cleaning", subSlug: "plumbing" },
         { name: "Wiring", slug: "wiring", subSlug: "electrical" },
-        { name: "Switchboard Repair", slug: "switchboard-repair", subSlug: "electrical" },
-        { name: "Furniture Assembly", slug: "furniture-assembly", subSlug: "carpentry" },
-        { name: "Interior Painting", slug: "interior-painting", subSlug: "painting" },
+        {
+          name: "Switchboard Repair",
+          slug: "switchboard-repair",
+          subSlug: "electrical",
+        },
+        {
+          name: "Furniture Assembly",
+          slug: "furniture-assembly",
+          subSlug: "carpentry",
+        },
+        {
+          name: "Interior Painting",
+          slug: "interior-painting",
+          subSlug: "painting",
+        },
         { name: "AC Repair", slug: "ac-repair", subSlug: "appliance-repair" },
       ],
     },
@@ -53,9 +65,21 @@ async function seedTaxonomy(): Promise<void> {
         { name: "Deep Cleaning", slug: "deep-cleaning" },
       ],
       skills: [
-        { name: "Bathroom Cleaning", slug: "bathroom-cleaning", subSlug: "home-cleaning" },
-        { name: "Kitchen Cleaning", slug: "kitchen-cleaning", subSlug: "home-cleaning" },
-        { name: "Carpet Shampooing", slug: "carpet-shampooing", subSlug: "deep-cleaning" },
+        {
+          name: "Bathroom Cleaning",
+          slug: "bathroom-cleaning",
+          subSlug: "home-cleaning",
+        },
+        {
+          name: "Kitchen Cleaning",
+          slug: "kitchen-cleaning",
+          subSlug: "home-cleaning",
+        },
+        {
+          name: "Carpet Shampooing",
+          slug: "carpet-shampooing",
+          subSlug: "deep-cleaning",
+        },
       ],
     },
     {
@@ -70,7 +94,11 @@ async function seedTaxonomy(): Promise<void> {
       ],
       skills: [
         { name: "Math Tutor", slug: "math-tutor", subSlug: "school-subjects" },
-        { name: "Science Tutor", slug: "science-tutor", subSlug: "school-subjects" },
+        {
+          name: "Science Tutor",
+          slug: "science-tutor",
+          subSlug: "school-subjects",
+        },
         { name: "English Tutor", slug: "english-tutor", subSlug: "languages" },
         { name: "Hindi Tutor", slug: "hindi-tutor", subSlug: "languages" },
         { name: "Guitar Lessons", slug: "guitar-lessons", subSlug: "music" },
@@ -103,8 +131,16 @@ async function seedTaxonomy(): Promise<void> {
         { name: "Yoga", slug: "yoga" },
       ],
       skills: [
-        { name: "Strength Training", slug: "strength-training", subSlug: "personal-trainer" },
-        { name: "Weight Loss Coaching", slug: "weight-loss-coaching", subSlug: "personal-trainer" },
+        {
+          name: "Strength Training",
+          slug: "strength-training",
+          subSlug: "personal-trainer",
+        },
+        {
+          name: "Weight Loss Coaching",
+          slug: "weight-loss-coaching",
+          subSlug: "personal-trainer",
+        },
         { name: "Hatha Yoga", slug: "hatha-yoga", subSlug: "yoga" },
       ],
     },
@@ -119,9 +155,21 @@ async function seedTaxonomy(): Promise<void> {
         { name: "Smart Home Setup", slug: "smart-home-setup" },
       ],
       skills: [
-        { name: "Laptop Repair", slug: "laptop-repair", subSlug: "computer-repair" },
-        { name: "Screen Replacement", slug: "screen-replacement", subSlug: "mobile-repair" },
-        { name: "CCTV Installation", slug: "cctv-installation", subSlug: "smart-home-setup" },
+        {
+          name: "Laptop Repair",
+          slug: "laptop-repair",
+          subSlug: "computer-repair",
+        },
+        {
+          name: "Screen Replacement",
+          slug: "screen-replacement",
+          subSlug: "mobile-repair",
+        },
+        {
+          name: "CCTV Installation",
+          slug: "cctv-installation",
+          subSlug: "smart-home-setup",
+        },
       ],
     },
     {

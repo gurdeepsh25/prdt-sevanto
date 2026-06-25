@@ -474,7 +474,9 @@ export class ApiClient {
     );
   }
 
-  listSubcategoriesByCategory(slug: string): Promise<{ items: SubcategoryRef[] }> {
+  listSubcategoriesByCategory(
+    slug: string,
+  ): Promise<{ items: SubcategoryRef[] }> {
     return this.request<{ items: SubcategoryRef[] }>(
       `/api/v1/categories/${encodeURIComponent(slug)}/subcategories`,
     );
@@ -501,11 +503,15 @@ export class ApiClient {
     );
   }
 
-  adminCreateCategory(input: CategoryCreateInput): Promise<{ category: { id: string; name: string; slug: string } }> {
-    return this.request<{ category: { id: string; name: string; slug: string } }>(
-      "/api/v1/admin/categories",
-      { method: "POST", body: JSON.stringify(input) },
-    );
+  adminCreateCategory(
+    input: CategoryCreateInput,
+  ): Promise<{ category: { id: string; name: string; slug: string } }> {
+    return this.request<{
+      category: { id: string; name: string; slug: string };
+    }>("/api/v1/admin/categories", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
   }
 
   adminUpdateCategory(
@@ -539,11 +545,13 @@ export class ApiClient {
   }
 
   // ---- Admin: skills ----
-  adminCreateSkill(input: SkillCreateInput): Promise<{ skill: SkillCatalogItem }> {
-    return this.request<{ skill: SkillCatalogItem }>(
-      "/api/v1/admin/skills",
-      { method: "POST", body: JSON.stringify(input) },
-    );
+  adminCreateSkill(
+    input: SkillCreateInput,
+  ): Promise<{ skill: SkillCatalogItem }> {
+    return this.request<{ skill: SkillCatalogItem }>("/api/v1/admin/skills", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
   }
 
   adminUpdateSkill(

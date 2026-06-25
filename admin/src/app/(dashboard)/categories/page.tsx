@@ -2,10 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useApi } from "@/hooks/use-api";
-import type {
-  CategoryWithSubs,
-  SubcategoryRef,
-} from "@sevanto/shared";
+import type { CategoryWithSubs, SubcategoryRef } from "@sevanto/shared";
 
 export default function AdminCategoriesPage() {
   const api = useApi();
@@ -66,7 +63,9 @@ export default function AdminCategoriesPage() {
       await api.adminAddSubcategory(cat.id, { name: name.trim() });
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add subcategory");
+      setError(
+        err instanceof Error ? err.message : "Failed to add subcategory",
+      );
     }
   }
 
@@ -104,9 +103,7 @@ export default function AdminCategoriesPage() {
             type="text"
             placeholder="Name (e.g. Pet Care)"
             value={newCat.name}
-            onChange={(e) =>
-              setNewCat((p) => ({ ...p, name: e.target.value }))
-            }
+            onChange={(e) => setNewCat((p) => ({ ...p, name: e.target.value }))}
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
           />
           <input
@@ -164,8 +161,8 @@ function CategoryRow({
 }) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
-  const isActive = (cat as CategoryWithSubs & { isActive?: boolean })
-    .isActive ?? true;
+  const isActive =
+    (cat as CategoryWithSubs & { isActive?: boolean }).isActive ?? true;
 
   return (
     <li className="rounded-xl border border-slate-200 bg-white p-4">
@@ -192,8 +189,8 @@ function CategoryRow({
           <p className="text-xs text-slate-500">No subcategories yet.</p>
         ) : (
           cat.subcategories.map((sub) => {
-            const subActive = (sub as SubcategoryRef & { isActive?: boolean })
-              .isActive ?? true;
+            const subActive =
+              (sub as SubcategoryRef & { isActive?: boolean }).isActive ?? true;
             return (
               <div
                 key={sub.id}

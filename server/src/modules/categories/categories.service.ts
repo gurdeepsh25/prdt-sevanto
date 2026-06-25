@@ -1,9 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../../infra/prisma/client.js";
-import {
-  ConflictError,
-  NotFoundError,
-} from "../../common/errors/AppError.js";
+import { ConflictError, NotFoundError } from "../../common/errors/AppError.js";
 import type {
   CategoryCreateInput,
   CategoryUpdateInput,
@@ -210,7 +207,9 @@ export async function createCategory(input: CategoryCreateInput): Promise<{
     };
   } catch (e) {
     if ((e as Prisma.PrismaClientKnownRequestError).code === "P2002") {
-      throw new ConflictError("A category with this name or slug already exists");
+      throw new ConflictError(
+        "A category with this name or slug already exists",
+      );
     }
     throw e;
   }
@@ -277,7 +276,9 @@ export async function addSubcategoryToCategory(
   categoryId: string,
   input: SubcategoryCreateInput,
 ): Promise<SubcategoryRef> {
-  const category = await prisma.category.findUnique({ where: { id: categoryId } });
+  const category = await prisma.category.findUnique({
+    where: { id: categoryId },
+  });
   if (!category) throw new NotFoundError("Category not found");
   const slug = input.slug ?? slugify(input.name);
   try {

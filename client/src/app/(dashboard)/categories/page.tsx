@@ -39,9 +39,7 @@ export default function CategoriesPage() {
         </p>
       </header>
 
-      {loading && (
-        <p className="text-sm text-slate-500">Loading categories…</p>
-      )}
+      {loading && <p className="text-sm text-slate-500">Loading categories…</p>}
       {error && (
         <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}

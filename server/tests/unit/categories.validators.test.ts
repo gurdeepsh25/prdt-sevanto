@@ -33,9 +33,9 @@ describe("categorySlugParamSchema", () => {
 
 describe("categoryCreateSchema", () => {
   it("accepts a minimal valid category", () => {
-    expect(categoryCreateSchema.safeParse({ name: "Home Services" }).success).toBe(
-      true,
-    );
+    expect(
+      categoryCreateSchema.safeParse({ name: "Home Services" }).success,
+    ).toBe(true);
   });
   it("accepts a full category", () => {
     expect(
@@ -82,9 +82,9 @@ describe("categoryUpdateSchema", () => {
     ).toBe(true);
   });
   it("accepts toggling isActive false", () => {
-    expect(
-      categoryUpdateSchema.safeParse({ isActive: false }).success,
-    ).toBe(true);
+    expect(categoryUpdateSchema.safeParse({ isActive: false }).success).toBe(
+      true,
+    );
   });
   it("rejects empty payloads", () => {
     expect(categoryUpdateSchema.safeParse({}).success).toBe(false);
@@ -150,9 +150,9 @@ describe("skillUpdateSchema", () => {
     expect(skillUpdateSchema.safeParse({ isActive: false }).success).toBe(true);
   });
   it("accepts null subcategoryId to unlink", () => {
-    expect(
-      skillUpdateSchema.safeParse({ subcategoryId: null }).success,
-    ).toBe(true);
+    expect(skillUpdateSchema.safeParse({ subcategoryId: null }).success).toBe(
+      true,
+    );
   });
 });
 

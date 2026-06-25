@@ -45,9 +45,7 @@ export default function CategoryDetailPage() {
         </Link>
       </div>
 
-      {loading && (
-        <p className="text-sm text-slate-500">Loading category…</p>
-      )}
+      {loading && <p className="text-sm text-slate-500">Loading category…</p>}
       {error && (
         <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}

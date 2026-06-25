@@ -49,16 +49,16 @@
 | ID   | Task                                                                         | Component      | Status    |
 | ---- | ---------------------------------------------------------------------------- | -------------- | --------- |
 | 4.1  | Prisma: add `Category` + `Subcategory` models; link `Skill` to `Subcategory` | server/db      | Completed |
-| 4.2  | Migration `004_job_categories` + `prisma generate`                            | server/db      | Completed |
+| 4.2  | Migration `004_job_categories` + `prisma generate`                           | server/db      | Completed |
 | 4.3  | `categories.validators.ts` (Zod schemas)                                     | server/api     | Completed |
-| 4.4  | `categories.service.ts` — public reads + admin CRUD + skills filter           | server/api     | Completed |
+| 4.4  | `categories.service.ts` — public reads + admin CRUD + skills filter          | server/api     | Completed |
 | 4.5  | `categories.controller.ts` + routes (public + admin)                         | server/api     | Completed |
 | 4.6  | Admin skills CRUD wired into router                                          | server/api     | Completed |
 | 4.7  | OpenAPI registration for new endpoints                                       | server/openapi | Completed |
 | 4.8  | Wire new routers into `app.ts`                                               | server/app     | Completed |
 | 4.9  | Unit tests: 27 new validator tests (100/100 total)                           | server/tests   | Completed |
 | 4.10 | Initial taxonomy seeded via `npm run prisma:seed`                            | server/seed    | Completed |
-| 4.11 | Customer app: `/categories` grid + `/categories/[slug]` detail              | client         | Completed |
+| 4.11 | Customer app: `/categories` grid + `/categories/[slug]` detail               | client         | Completed |
 | 4.12 | Worker app: `/skills` filterable by category pills                           | worker         | Completed |
 | 4.13 | Admin app: `/categories` tree mgmt (CRUD + activate/deactivate)              | admin          | Completed |
 | 4.14 | Shared package: types + ApiClient methods for categories / skills            | shared         | Completed |
@@ -67,16 +67,16 @@
 
 ### Verification (all green)
 
-| Check                                          | Result                                                                       |
-| ---------------------------------------------- | ---------------------------------------------------------------------------- |
-| `prisma generate`                              | ✅ Category + Subcategory + Skill (with subcategory link) compiled           |
-| `npm run typecheck` (server, shared, 3 apps)   | ✅ no errors                                                                 |
-| `npm run build` (server)                       | ✅ compiles to `dist/`                                                       |
-| `npm run build` (client)                       | ✅ 14 routes (incl. `/categories`, `/categories/[slug]`)                     |
-| `npm run build` (worker)                       | ✅ 12 routes (skills page now category-filtered)                             |
-| `npm run build` (admin)                        | ✅ 9 routes (incl. `/categories`)                                            |
-| `npm run test:unit` (server)                   | ✅ **100 / 100** tests pass (27 new for Phase 4)                             |
-| Phase 4 endpoints registered                   | ✅ 12 new endpoints (3 public + 4 admin categories + 1 admin subs + 2 admin skills + 2 already in /skills) |
+| Check                                        | Result                                                                                                     |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `prisma generate`                            | ✅ Category + Subcategory + Skill (with subcategory link) compiled                                         |
+| `npm run typecheck` (server, shared, 3 apps) | ✅ no errors                                                                                               |
+| `npm run build` (server)                     | ✅ compiles to `dist/`                                                                                     |
+| `npm run build` (client)                     | ✅ 14 routes (incl. `/categories`, `/categories/[slug]`)                                                   |
+| `npm run build` (worker)                     | ✅ 12 routes (skills page now category-filtered)                                                           |
+| `npm run build` (admin)                      | ✅ 9 routes (incl. `/categories`)                                                                          |
+| `npm run test:unit` (server)                 | ✅ **100 / 100** tests pass (27 new for Phase 4)                                                           |
+| Phase 4 endpoints registered                 | ✅ 12 new endpoints (3 public + 4 admin categories + 1 admin subs + 2 admin skills + 2 already in /skills) |
 
 ### ✅ Phase 3 — Worker Profiles — Completed 2026-06-24
 
