@@ -12,11 +12,20 @@ import type {
   JobCancelInput,
   JobAttachmentCreateInput,
   JobListQuery,
+  PublicJobsQuery,
 } from "./jobs.validators.js";
 import {
   JOB_CANCELLABLE_STATUSES,
   JOB_OWNER_EDITABLE_STATUSES,
 } from "./jobs.validators.js";
+
+// Urgency priority for `sort=urgency:desc`
+const URGENCY_ORDER: Record<JobUrgency, number> = {
+  URGENT: 4,
+  HIGH: 3,
+  NORMAL: 2,
+  LOW: 1,
+};
 
 // =====================================================
 // Helpers
@@ -498,9 +507,7 @@ export interface AdminJobRow extends JobSummary {
   customerEmail: string;
 }
 
-export async function adminListJobsDetailed(
-  query: JobListQuery,
-): Promise<{
+export async function adminListJobsDetailed(query: JobListQuery): Promise<{
   items: AdminJobRow[];
   total: number;
   page: number;
@@ -530,4 +537,189 @@ export async function adminListJobsDetailed(
     page: result.page,
     pageSize: result.pageSize,
   };
+}
+
+// =====================================================
+// Phase 6 — Public job discovery feed
+// =====================================================
+export interface PublicJobCard {
+  id: string;
+  title: string;
+  status: JobStatus;
+  urgency: JobUrgency;
+  city: string;
+  categoryId: string;
+  categoryName: string;
+  subcategoryId: string | null;
+  subcategoryName: string | null;
+  budgetMin: number | null;
+  budgetMax: number | null;
+  currency: string;
+  scheduledFor: string | null;
+  createdAt: string;
+  attachmentCount: number;
+  applicantCount: number;
+}
+
+export interface PublicJobListResult {
+  items: PublicJobCard[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export async function listPublicJobs(
+  query: PublicJobsQuery,
+): Promise<PublicJobListResult> {
+  const where: Prisma.JobWhereInput = {
+    deletedAt: null,
+    status: "OPEN",
+    ...(query.categoryId ? { categoryId: query.categoryId } : {}),
+    ...(query.subcategoryId ? { subcategoryId: query.subcategoryId } : {}),
+    ...(query.urgency ? { urgency: query.urgency } : {}),
+    ...(query.city
+      ? { city: { equals: query.city, mode: "insensitive" } }
+      : {}),
+    ...(query.search
+      ? {
+          OR: [
+            { title: { contains: query.search, mode: "insensitive" } },
+            { description: { contains: query.search, mode: "insensitive" } },
+          ],
+        }
+      : {}),
+    ...(query.minBudget !== undefined || query.maxBudget !== undefined
+      ? {
+          OR: [
+            // Case A: job has budgetMax — overlap with [min, max]
+            ...(query.minBudget !== undefined && query.maxBudget !== undefined
+              ? [
+                  {
+                    AND: [
+                      { budgetMax: { gte: query.minBudget } },
+                      { budgetMin: { lte: query.maxBudget } },
+                    ],
+                  },
+                ]
+              : []),
+            // Case B: only minBudget set — overlap if budgetMax >= min
+            ...(query.minBudget !== undefined && query.maxBudget === undefined
+              ? [{ budgetMax: { gte: query.minBudget } }]
+              : []),
+            // Case C: only maxBudget set — overlap if budgetMin <= max
+            ...(query.minBudget === undefined && query.maxBudget !== undefined
+              ? [{ budgetMin: { lte: query.maxBudget } }]
+              : []),
+          ],
+        }
+      : {}),
+    ...(query.scheduledAfter
+      ? { scheduledFor: { gte: new Date(query.scheduledAfter) } }
+      : {}),
+  };
+
+  // If filtering by categorySlug, resolve it to an id first
+  if (query.categorySlug && !query.categoryId) {
+    const c = await prisma.category.findFirst({
+      where: { slug: query.categorySlug, isActive: true },
+      select: { id: true },
+    });
+    where.categoryId = c?.id ?? "__no_match__";
+  }
+
+  const [field, direction] = query.sort.split(":") as [string, "asc" | "desc"];
+
+  // urgency sort can't be expressed as Prisma orderBy — we sort in memory.
+  const isUrgencySort = field === "urgency";
+
+  const [total, jobs] = await Promise.all([
+    prisma.job.count({ where }),
+    prisma.job.findMany({
+      where,
+      // For non-urgency sorts use Prisma orderBy; urgency fallback to createdAt then re-sort
+      orderBy: isUrgencySort ? { createdAt: "desc" } : { [field]: direction },
+      skip: isUrgencySort ? 0 : (query.page - 1) * query.pageSize,
+      take: query.pageSize,
+      include: {
+        category: { select: { name: true } },
+        subcategory: { select: { name: true } },
+        _count: { select: { attachments: true } },
+      },
+    }),
+  ]);
+
+  let items: PublicJobCard[] = jobs.map((j) => ({
+    id: j.id,
+    title: j.title,
+    status: j.status,
+    urgency: j.urgency,
+    city: j.city,
+    categoryId: j.categoryId,
+    categoryName: j.category.name,
+    subcategoryId: j.subcategoryId,
+    subcategoryName: j.subcategory?.name ?? null,
+    budgetMin: j.budgetMin,
+    budgetMax: j.budgetMax,
+    currency: j.currency,
+    scheduledFor: j.scheduledFor ? j.scheduledFor.toISOString() : null,
+    createdAt: j.createdAt.toISOString(),
+    attachmentCount: j._count.attachments,
+    applicantCount: 0, // populated in Phase 7 when applications model lands
+  }));
+
+  if (isUrgencySort) {
+    items.sort((a, b) => {
+      const da = URGENCY_ORDER[a.urgency];
+      const db = URGENCY_ORDER[b.urgency];
+      return direction === "desc" ? db - da : da - db;
+    });
+    const start = (query.page - 1) * query.pageSize;
+    items = items.slice(start, start + query.pageSize);
+  }
+
+  return { items, total, page: query.page, pageSize: query.pageSize };
+}
+
+/**
+ * Public job detail.
+ * - Returns the job if it is OPEN (anyone can view)
+ * - Returns the job to its owner / ADMIN regardless of status
+ * - Assigned workers (future) would also see it — deferred to Phase 7+
+ */
+export async function getPublicJob(
+  jobId: string,
+  callerId: string | null,
+  callerRole: "CUSTOMER" | "WORKER" | "ADMIN" | null,
+): Promise<JobDetail> {
+  // Load the job with the same include as `loadJobDetail` so the result is
+  // shaped consistently for `toDetail`.
+  const job = await prisma.job.findUnique({
+    where: { id: jobId },
+    include: {
+      category: { select: { name: true } },
+      subcategory: { select: { name: true } },
+      attachments: { orderBy: { sortOrder: "asc" } },
+    },
+  });
+  if (!job || job.deletedAt) throw new NotFoundError("Job not found");
+
+  const isOwner = callerId !== null && job.customerId === callerId;
+  const isAdmin = callerRole === "ADMIN";
+  if (job.status !== "OPEN" && !isOwner && !isAdmin) {
+    // Hide non-OPEN jobs from anonymous public callers and unrelated users.
+    throw new NotFoundError("Job not found");
+  }
+  return toDetail(
+    job as Job & {
+      category: { name: string };
+      subcategory: { name: string } | null;
+      attachments: {
+        id: string;
+        url: string;
+        caption: string | null;
+        sortOrder: number;
+        createdAt: Date;
+      }[];
+    },
+  );
 }

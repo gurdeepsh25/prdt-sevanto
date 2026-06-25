@@ -1258,3 +1258,93 @@ registry.registerPath({
     },
   },
 });
+
+// =====================================================
+// Phase 6 — Public Job Discovery
+// =====================================================
+
+const PublicJobCardSchema = z
+  .object({
+    id: z.string().uuid(),
+    title: z.string(),
+    status: z.enum(["OPEN"]),
+    urgency: z.enum(["LOW", "NORMAL", "HIGH", "URGENT"]),
+    city: z.string(),
+    categoryId: z.string().uuid(),
+    categoryName: z.string(),
+    subcategoryId: z.string().uuid().nullable().optional(),
+    subcategoryName: z.string().nullable().optional(),
+    budgetMin: z.number().int().nullable().optional(),
+    budgetMax: z.number().int().nullable().optional(),
+    currency: z.string(),
+    scheduledFor: z.string().datetime().nullable().optional(),
+    createdAt: z.string().datetime(),
+    attachmentCount: z.number().int(),
+    applicantCount: z.number().int(),
+  })
+  .openapi("PublicJobCard");
+
+registry.registerPath({
+  method: "get",
+  path: "/jobs/public",
+  summary: "Public: list open jobs (filterable, paginated, sorted)",
+  tags: ["Jobs"],
+  request: {
+    query: z.object({
+      page: z.coerce.number().int().positive().optional(),
+      pageSize: z.coerce.number().int().positive().max(100).optional(),
+      categoryId: z.string().uuid().optional(),
+      subcategoryId: z.string().uuid().optional(),
+      categorySlug: z.string().optional(),
+      city: z.string().optional(),
+      urgency: z.enum(["LOW", "NORMAL", "HIGH", "URGENT"]).optional(),
+      minBudget: z.coerce.number().int().nonnegative().optional(),
+      maxBudget: z.coerce.number().int().nonnegative().optional(),
+      scheduledAfter: z.string().datetime().optional(),
+      search: z.string().optional(),
+      sort: z
+        .enum([
+          "createdAt:desc",
+          "createdAt:asc",
+          "scheduledFor:asc",
+          "budgetMax:desc",
+          "budgetMax:asc",
+          "urgency:desc",
+        ])
+        .optional(),
+    }),
+  },
+  responses: {
+    200: {
+      description: "OK",
+      content: {
+        "application/json": {
+          schema: z.object({
+            items: z.array(PublicJobCardSchema),
+            total: z.number().int(),
+            page: z.number().int(),
+            pageSize: z.number().int(),
+          }),
+        },
+      },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/jobs/public/{id}",
+  summary:
+    "Public: get an OPEN job detail (owner / admin also see non-OPEN jobs)",
+  tags: ["Jobs"],
+  request: { params: z.object({ id: z.string().uuid() }) },
+  responses: {
+    200: {
+      description: "OK",
+      content: {
+        "application/json": { schema: z.object({ job: JobDetailSchema }) },
+      },
+    },
+    404: { description: "Not found / not publicly visible" },
+  },
+});

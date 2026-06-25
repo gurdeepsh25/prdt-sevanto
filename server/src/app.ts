@@ -23,6 +23,7 @@ import {
 } from "./modules/categories/categories.routes.js";
 import jobsRouter, {
   adminRouter as jobsAdminRouter,
+  publicRouter as jobsPublicRouter,
 } from "./modules/jobs/jobs.routes.js";
 import healthRouter from "./modules/health.routes.js";
 import { buildOpenApiDocument } from "./openapi/registry.js";
@@ -103,6 +104,7 @@ export function createApp(): Express {
 
   // Phase 5 — jobs
   app.use("/api/v1/jobs", jobsRouter);
+  app.use("/api/v1/jobs/public", jobsPublicRouter);
   app.use("/api/v1/admin/jobs", jobsAdminRouter);
 
   // 404 + error handlers last

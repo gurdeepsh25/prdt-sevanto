@@ -18,6 +18,7 @@
 - [Phase 3 — Worker Profiles](#phase-3--worker-profiles)
 - [Phase 4 — Job Categories](#phase-4--job-categories)
 - [Phase 5 — Job Posting](#phase-5--job-posting)
+- [Phase 6 — Job Discovery](#phase-6--job-discovery)
 - [API Surface](#api-surface)
 - [Architecture](#architecture)
 - [Security](#security)
@@ -54,7 +55,7 @@ The repo follows an **MVP-first**, **backend-first**, **modular monolith** archi
 |     3 | Worker Profiles            | ✅ Completed | 2026-06-24 | 2026-06-24 |
 |     4 | Job Categories             | ✅ Completed | 2026-06-25 | 2026-06-25 |
 |     5 | Job Posting                | ✅ Completed | 2026-06-25 | 2026-06-25 |
-|     6 | Job Discovery              | 🟡 Pending   | —          | —          |
+|     6 | Job Discovery              | ✅ Completed | 2026-06-25 | 2026-06-25 |
 |     7 | Job Applications           | 🟡 Pending   | —          | —          |
 |     8 | Job Assignment             | 🟡 Pending   | —          | —          |
 |     9 | Job Lifecycle              | 🟡 Pending   | —          | —          |
@@ -167,11 +168,13 @@ sevanto/
 │   │   │   ├── auth/          ← Phase 1
 │   │   │   ├── users/         ← Phase 2
 │   │   │   ├── workers/       ← Phase 3 (public + self-service + admin verify)
+│   │   │   ├── categories/    ← Phase 4 (taxonomy + admin CRUD)
+│   │   │   ├── jobs/          ← Phase 5 customer CRUD + Phase 6 public feed
 │   │   │   └── health.routes.ts
 │   │   └── openapi/registry.ts
 │   ├── tests/
-│   │   ├── setup.ts73
-│   │   ├── unit/              ← 42 passing tests
+│   │   ├── setup.ts
+│   │   ├── unit/              ← 155 passing tests
 │   │   └── integration/       ← scaffolded (Supertest)
 │   └── smoke.js               ← runtime smoke test
 │
@@ -197,9 +200,19 @@ sevanto/
 │       │       ├── dashboard/page.tsx
 │       │       ├── profile/page.tsx          ← Phase 2 (with address CRUD)
 │       │       ├── settings/page.tsx         ← Phase 2 (change password / delete)
-│       │       └── workers/                  ← Phase 3 (public worker directory)
-│       │           ├── page.tsx              ← list + filters (city, skill, rating, verified)
-│       │           └── [id]/page.tsx         ← public profile detail (bio, skills, portfolio)
+│       │       ├── workers/                  ← Phase 3 (public worker directory)
+│       │       │   ├── page.tsx              ← list + filters (city, skill, rating, verified)
+│       │       │   └── [id]/page.tsx         ← public profile detail (bio, skills, portfolio)
+│       │       ├── categories/               ← Phase 4
+│       │       │   ├── page.tsx              ← grid of active categories
+│       │       │   └── [slug]/page.tsx       ← category detail + subcategory list
+│       │       ├── my-jobs/                  ← Phase 5 (customer-only)
+│       │       │   ├── page.tsx              ← list with status filter pills
+│       │       │   ├── new/page.tsx          ← 5-step wizard
+│       │       │   └── [id]/page.tsx         ← detail + status timeline + cancel/delete
+│       │       └── jobs/                     ← Phase 6 (public discovery)
+│       │           ├── page.tsx              ← open-jobs feed (filters + sort + paging)
+│       │           └── [id]/page.tsx         ← public job detail
 │       ├── components/
 │       │   ├── auth/                         ← AuthShell, AuthForm
 │       │   └── ui/                           ← Button, Input, FormField
@@ -212,12 +225,16 @@ sevanto/
 │       └── app/
 │           ├── (auth)/signup/page.tsx        ← role=WORKER preset
 │           └── (dashboard)/
-│               ├── profile/page.tsx          ← Phase 2 (name, phone)
+│               ├── layout.tsx                ← worker role guard
+│               ├── dashboard/page.tsx
+│               ├── profile/page.tsx          ← Phase 2 (name, phone) + Phase 3 worker fields
+│               │                                       (headline, bio, rate, radius, city)
 │               ├── settings/page.tsx         ← Phase 2 (change password / delete)
-│               ├── profile/page.tsx          ← Phase 3: worker fields (headline, bio, rate,
-│               │                                       radius, city) + completeness bar
-│               ├── skills/page.tsx           ← Phase 3: skill picker + level selector
-│               └── portfolio/page.tsx        ← Phase 3: add/remove portfolio items by URL
+│               ├── skills/page.tsx           ← Phase 3 + Phase 4 category-filter chips
+│               ├── portfolio/page.tsx        ← Phase 3: add/remove portfolio items by URL
+│               └── jobs/                     ← Phase 6 (public job discovery)
+│                   ├── page.tsx              ← open-jobs feed (filters + sort + paging)
+│                   └── [id]/page.tsx         ← public job detail
 │
 └── admin/                     ← Admin Next.js 14 app (port 3003)
     └── src/
@@ -226,13 +243,15 @@ sevanto/
             └── (dashboard)/
                 ├── layout.tsx                ← admin role guard
                 ├── dashboard/page.tsx
-│               ├── users/
-│               │   ├── page.tsx              ← Phase 2: list users
-│               │   └── [id]/page.tsx         ← Phase 2: detail + suspend
-│               ├── workers/
-│               │   └── pending/page.tsx      ← Phase 3: verification queue + verify action
-│               └── categories/
-│                   └── page.tsx              ← Phase 4: category tree mgmt + CRUD
+                ├── users/                    ← Phase 2: list users
+                │   ├── page.tsx
+                │   └── [id]/page.tsx         ← detail + suspend/reactivate
+                ├── workers/                  ← Phase 3
+                │   └── pending/page.tsx      ← verification queue + verify action
+                ├── categories/               ← Phase 4: category tree mgmt + CRUD
+                │   └── page.tsx
+                └── jobs/                     ← Phase 5: read-only jobs list
+                    └── page.tsx
 ```
 
 ---
@@ -331,7 +350,7 @@ services:
 
 ### Option C — Quick demo (no DB)
 
-The shared package and frontends can be developed in isolation by pointing `NEXT_PUBLIC_API_BASE_URL` at a mock. Backend tests run without a DB (73/73 unit tests pass with zero infra).
+The shared package and frontends can be developed in isolation by pointing `NEXT_PUBLIC_API_BASE_URL` at a mock. Backend tests run without a DB (155/155 unit tests pass with zero infra).
 
 ---
 
@@ -514,9 +533,10 @@ A managed taxonomy (`Category → Subcategory → Skill`) that powers filtering,
 | **Skills (admin)** | create, update |
 | **Jobs (customer)** | create, list-mine, get-mine, update, delete, cancel, add-attachment, delete-attachment |
 | **Jobs (admin)** | list |
+| **Jobs (public)** | list-open, detail-open |
 | **Health** | `/healthz`, `/readyz`, `/version` |
 
-**Total**: 53 endpoints across 12 modules.
+**Total**: 55 endpoints across 13 modules.
 
 ---
 
@@ -586,7 +606,7 @@ Other              → Miscellaneous
 
 Customers can post jobs (via a 5-step wizard), edit / cancel / soft-delete them while they are still in `DRAFT` or `OPEN`, attach reference images by URL, and track their progress through the lifecycle.
 
-### Backend endpoints (8/8)
+### Backend endpoints (9 total: 8 customer + 1 admin)
 
 #### Customer — `/api/v1/jobs`
 
@@ -653,21 +673,100 @@ Customers can post jobs (via a 5-step wizard), edit / cancel / soft-delete them 
 
 ---
 
+## Phase 6 — Job Discovery
+
+**Status**: ✅ Complete
+
+Workers can browse the public feed of open jobs and customers can see what other people are requesting. The public worker feed gained richer filters (category, subcategory, max hourly rate, min experience).
+
+### Backend endpoints (2 new + enriched existing)
+
+#### Public — `/api/v1/jobs/public` (new in Phase 6)
+
+| Method | Path                      | Auth   | Purpose                                                           |
+| ------ | ------------------------- | ------ | ----------------------------------------------------------------- |
+| `GET`  | `/api/v1/jobs/public`     | public | List **OPEN** jobs with rich filters + pagination + sorting       |
+| `GET`  | `/api/v1/jobs/public/:id` | public | Detail; `OPEN` jobs visible to anyone, owners/admin see their own |
+
+#### Public workers — enriched filters (Phase 6)
+
+`GET /api/v1/workers` now also accepts:
+
+- `categoryId`, `categorySlug`, `subcategoryId` — filter by taxonomy
+- `maxHourlyRate` — include workers at or below the rate (or with no rate set)
+- `minYearsExperience` — filter by experience floor
+- Sort: `hourlyRate:asc|desc`, `yearsExperience:desc`, `totalJobsCompleted:desc`
+
+### Validation rules
+
+- **`page ≥ 1`**, **`pageSize 1–100`**
+- **`minBudget ≤ maxBudget`** (otherwise 400)
+- **`urgency`** must be one of `LOW | NORMAL | HIGH | URGENT`
+- **`scheduledAfter`** must be ISO-8601 if provided
+- **`search`** matches title or description (case-insensitive `contains`)
+
+### Sort options
+
+| `sort=`            | Behavior                                  |
+| ------------------ | ----------------------------------------- |
+| `createdAt:desc`   | **default** — newest first                |
+| `createdAt:asc`    | oldest first                              |
+| `scheduledFor:asc` | jobs scheduled soonest first (nulls last) |
+| `budgetMax:desc`   | highest top-end budget first              |
+| `budgetMax:asc`    | lowest top-end budget first               |
+| `urgency:desc`     | `URGENT → HIGH → NORMAL → LOW`            |
+
+`urgency` sort is performed in-memory after Prisma pagination to honor the stable ordering on the enum.
+
+### Budget range filter
+
+When `minBudget` and/or `maxBudget` are provided, only jobs whose budget interval **overlaps** with the requested range are returned:
+
+- Job has `budgetMin` + `budgetMax` → overlap test `budgetMax ≥ min && budgetMin ≤ max`
+- Job has only `budgetMax` → `budgetMax ≥ min`
+- Job has only `budgetMin` → `budgetMin ≤ max`
+- Job has neither → included (open budget)
+
+### Security highlights
+
+- **Public read-only** — `GET /jobs/public/*` never mutates state
+- **Status visibility** — only `OPEN` jobs are returned in the public list; non-OPEN jobs are returned by `GET /jobs/public/:id` **only** to their owner or an admin (others get `404`)
+- **Soft-deleted jobs excluded** from every public read (`deletedAt IS NULL`)
+- **Worker public profile already excludes** contact info (Phase 3) — phone/email never leak
+
+### Frontend pages
+
+- **Worker** (`worker/`):
+  - `/jobs` — paginated browse with search, city, category, urgency, budget range, sort
+  - `/jobs/[id]` — public detail with description + attachments + "apply" placeholder (Phase 7 ships applications)
+- **Customer** (`client/`):
+  - `/jobs` — same public browse so customers can see open demand
+  - `/jobs/[id]` — public detail
+- Both dashboard navs now include **Browse Jobs**
+
+---
+
 ## API Surface
 
-| Resource              | Endpoints                                                                                          |
-| --------------------- | -------------------------------------------------------------------------------------------------- |
-| **Auth**              | signup, login, refresh, logout, verify-email, resend-verification, forgot-password, reset-password |
-| **Users (me)**        | get, update, change-password, delete, avatar-ticket                                                |
-| **Users (addresses)** | list, create, update, delete                                                                       |
-| **Users (admin)**     | list, get, update                                                                                  |
-| **Workers (public)**  | list, detail                                                                                       |
-| **Skills (public)**   | catalog                                                                                            |
-| **Workers (self)**    | get-my, upsert, patch, replace-skills, list/add/delete-portfolio                                   |
-| **Workers (admin)**   | pending, verify                                                                                    |
-| **Health**            | `/healthz`, `/readyz`, `/version`                                                                  |
+| Resource                | Endpoints                                                                                          |
+| ----------------------- | -------------------------------------------------------------------------------------------------- |
+| **Auth**                | signup, login, refresh, logout, verify-email, resend-verification, forgot-password, reset-password |
+| **Users (me)**          | get, update, change-password, delete, avatar-ticket                                                |
+| **Users (addresses)**   | list, create, update, delete                                                                       |
+| **Users (admin)**       | list, get, update                                                                                  |
+| **Workers (public)**    | list (rich filters), detail                                                                        |
+| **Skills (public)**     | catalog (filterable by category / subcategory)                                                     |
+| **Workers (self)**      | get-my, upsert, patch, replace-skills, list/add/delete-portfolio                                   |
+| **Workers (admin)**     | pending, verify                                                                                    |
+| **Categories (public)** | list, get-by-slug, subcategories-for-category                                                      |
+| **Categories (admin)**  | list, create, update, add-subcategory, update-subcategory                                          |
+| **Skills (admin)**      | create, update                                                                                     |
+| **Jobs (customer)**     | create, list-mine, get-mine, update, delete, cancel, add-attachment, delete-attachment             |
+| **Jobs (admin)**        | list                                                                                               |
+| **Jobs (public)**       | list-open, detail-open                                                                             |
+| **Health**              | `/healthz`, `/readyz`, `/version`                                                                  |
 
-**Total**: 32 endpoints across 7 modules.
+**Total**: 55 endpoints across 13 modules.
 
 **OpenAPI**: served at `GET /openapi.json` (OpenAPI 3.1) and visualized at `/docs` (Swagger UI).
 
@@ -759,7 +858,8 @@ Sevanto follows defense-in-depth at every layer. The full checklist lives in [do
 | `tests/unit/workers.service.test.ts`       |                                                7 | ✅              |
 | `tests/unit/categories.validators.test.ts` |                                               27 | ✅              |
 | `tests/unit/jobs.validators.test.ts`       |                                               37 | ✅              |
-| **Total unit**                             |                                          **137** | **✅ all pass** |
+| `tests/unit/jobs.publicQuery.test.ts`      |                                               18 | ✅              |
+| **Total unit**                             |                                          **155** | **✅ all pass** |
 | `tests/integration/auth.test.ts`           | scaffolded (Supertest, gated by `describe.skip`) |
 
 ### Running tests
@@ -901,8 +1001,7 @@ npm run lint                 # next lint
 - ✅ Phase 3 — Worker Profiles (skills, portfolio, admin verification queue)
 - ✅ Phase 4 — Job Categories (managed taxonomy: Category → Subcategory → Skill)
 - ✅ Phase 5 — Job Posting (customer wizard, status machine, attachments, admin read-only)
-- 🟡 Phase 6 — Job Discovery
-- 🟡 Phase 6 — Job Discovery
+- ✅ Phase 6 — Job Discovery (public job feed, public job detail, enriched worker filters)
 - 🟡 Phase 7 — Job Applications
 - 🟡 Phase 8 — Job Assignment
 - 🟡 Phase 9 — Job Lifecycle
@@ -944,4 +1043,4 @@ Every feature ships with: DB schema, API documentation, validators, security rev
 
 ---
 
-**Built with care. Phase 5 complete — 53/53 endpoints live, 137/137 tests green, ready for Job Discovery.**
+**Built with care. Phase 6 complete — 55/55 endpoints live, 155/155 tests green, ready for Job Applications.**

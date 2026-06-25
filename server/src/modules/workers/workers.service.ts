@@ -113,6 +113,34 @@ export async function listPublicWorkers(
       some: { skill: { slug: slugify(query.skill) } },
     };
   }
+  // Phase 6 — Job Discovery: richer filters
+  if (query.subcategoryId) {
+    where.skills = {
+      some: { skill: { subcategoryId: query.subcategoryId } },
+    };
+  } else if (query.categoryId) {
+    where.skills = {
+      some: { skill: { subcategory: { categoryId: query.categoryId } } },
+    };
+  } else if (query.categorySlug) {
+    where.skills = {
+      some: {
+        skill: {
+          subcategory: { category: { slug: query.categorySlug } },
+        },
+      },
+    };
+  }
+  if (query.maxHourlyRate !== undefined) {
+    // Include workers with no rate set (treated as negotiable); cap those that have a rate.
+    where.OR = [
+      { hourlyRate: null },
+      { hourlyRate: { lte: query.maxHourlyRate } },
+    ];
+  }
+  if (query.minYearsExperience !== undefined) {
+    where.yearsExperience = { gte: query.minYearsExperience };
+  }
 
   const [field, direction] = query.sort.split(":") as [string, "asc" | "desc"];
 

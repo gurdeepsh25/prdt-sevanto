@@ -38,6 +38,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   const nav = [
     { href: "/dashboard", label: "Overview" },
+    { href: "/jobs", label: "Browse Jobs" },
     { href: "/profile", label: "Worker Profile" },
     { href: "/skills", label: "Skills" },
     { href: "/portfolio", label: "Portfolio" },

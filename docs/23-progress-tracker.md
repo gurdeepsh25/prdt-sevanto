@@ -18,7 +18,7 @@
 |     3 | Worker Profiles                  | Completed | 2026-06-24 | 2026-06-24 |
 |     4 | Job Categories                   | Completed | 2026-06-25 | 2026-06-25 |
 |     5 | Job Posting                      | Completed | 2026-06-25 | 2026-06-25 |
-|     6 | Job Discovery                    | Pending   | —          | —          |
+|     6 | Job Discovery                    | Completed | 2026-06-25 | 2026-06-25 |
 |     7 | Job Applications                 | Pending   | —          | —          |
 |     8 | Job Assignment                   | Pending   | —          | —          |
 |     9 | Job Lifecycle                    | Pending   | —          | —          |
@@ -43,6 +43,38 @@
 | 0.5 | Approval gate (wait for sign-off before any code) | —     | Completed |
 
 ## Active Phase
+
+### ✅ Phase 6 — Job Discovery — Completed 2026-06-25
+
+| ID   | Task                                                                                                                                                                     | Component      | Status    |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------- | --------- |
+| 6.1  | `publicJobsQuerySchema` — rich filters (category, subcategory, city, urgency, budget range, scheduledAfter, search, sort)                                                | server/api     | Completed |
+| 6.2  | `listPublicJobs` service — `OPEN` only, soft-deleted excluded, budget-overlap logic, urgency in-memory sort                                                              | server/api     | Completed |
+| 6.3  | `getPublicJob` service — `OPEN` visible to anyone; owner / admin see their non-OPEN jobs                                                                                 | server/api     | Completed |
+| 6.4  | Public router at `/api/v1/jobs/public` (list + detail) — anonymous, optional auth-aware                                                                                  | server/api     | Completed |
+| 6.5  | Routers wired into `app.ts`                                                                                                                                              | server/app     | Completed |
+| 6.6  | Enriched `workerListQuerySchema` — `categoryId`/`categorySlug`/`subcategoryId`/`maxHourlyRate`/`minYearsExperience` + 3 new sort options                                 | server/api     | Completed |
+| 6.7  | Updated `listPublicWorkers` service to honor the new filters (skill ↔ category ↔ subcategory)                                                                            | server/api     | Completed |
+| 6.8  | OpenAPI registration for 2 new public job endpoints + `PublicJobCard` schema                                                                                             | server/openapi | Completed |
+| 6.9  | Unit tests: 18 new `publicJobsQuerySchema` tests (155/155 total)                                                                                                         | server/tests   | Completed |
+| 6.10 | Shared package: 3 new types (`PublicJobCard`, `PublicJobListResult`, `PublicJobsQuery`) + 2 ApiClient methods (`listPublicJobs`, `getPublicJob`) + extended worker query | shared         | Completed |
+| 6.11 | Worker app: `/jobs` browse + `/jobs/[id]` detail                                                                                                                         | worker         | Completed |
+| 6.12 | Customer app: `/jobs` browse + `/jobs/[id]` detail                                                                                                                       | client         | Completed |
+| 6.13 | Worker + Customer dashboard nav updated with **Browse Jobs**                                                                                                             | client/worker  | Completed |
+| 6.14 | Build + typecheck all packages green                                                                                                                                     | all            | Completed |
+| 6.15 | README + tracker updated                                                                                                                                                 | docs           | Completed |
+
+### Verification (all green)
+
+| Check                                        | Result                                                                      |
+| -------------------------------------------- | --------------------------------------------------------------------------- |
+| `npm run typecheck` (server, shared, 3 apps) | ✅ no errors                                                                |
+| `npm run build` (server)                     | ✅ compiles to `dist/`                                                      |
+| `npm run build` (client)                     | ✅ 19 routes (incl. `/jobs`, `/jobs/[id]`)                                  |
+| `npm run build` (worker)                     | ✅ 14 routes (incl. `/jobs`, `/jobs/[id]`)                                  |
+| `npm run build` (admin)                      | ✅ 10 routes (unchanged — admin sees jobs at `/admin/jobs` from Phase 5)    |
+| `npm run test:unit` (server)                 | ✅ **155 / 155** tests pass (18 new for Phase 6)                            |
+| Phase 6 endpoints                            | ✅ 2 new (`GET /jobs/public`, `GET /jobs/public/:id`) + enriched `/workers` |
 
 ### ✅ Phase 5 — Job Posting — Completed 2026-06-25
 
@@ -260,3 +292,4 @@
 - 2026-06-24 — **Phase 3 complete**: backend (12 worker endpoints + Skill catalog + admin verify queue) + 3 frontends (customer `/workers` list + detail, worker `/profile` + `/skills` + `/portfolio`, admin `/workers/pending`). 73/73 unit tests pass. Endpoint audit shows 32/32 implemented (12 new worker routes added).
 - 2026-06-25 — **Phase 4 complete**: backend (Category + Subcategory + Skill taxonomy, 12 new endpoints) + 3 frontends (customer `/categories` + `/categories/[slug]`, worker `/skills` filterable by category, admin `/categories` management). 100/100 unit tests pass (27 new). README + tracker updated.
 - 2026-06-25 — **Phase 5 complete**: backend (Job + JobAttachment + state machine, 9 new endpoints) + 3 frontends (customer `/my-jobs` list + `/my-jobs/new` 5-step wizard + `/my-jobs/[id]` detail, admin `/jobs` read-only). 137/137 unit tests pass (37 new). README + tracker updated. (Total: 53 endpoints across 12 modules.)
+- 2026-06-25 — **Phase 6 complete**: backend (public job feed + public job detail with rich filters; enriched public worker filters). 3 frontends (worker + customer `/jobs` browse + `/jobs/[id]` detail). 155/155 unit tests pass (18 new). README + tracker updated. (Total: 55 endpoints across 13 modules.)

@@ -7,6 +7,7 @@ import {
   jobCancelSchema,
   jobAttachmentCreateSchema,
   jobListQuerySchema,
+  publicJobsQuerySchema,
   idParamSchema,
 } from "./jobs.validators.js";
 import type { AuthedRequest } from "../../common/middlewares/auth.js";
@@ -166,6 +167,44 @@ export async function adminListJobs(
     const q = jobListQuerySchema.parse(req.query);
     const result = await service.adminListJobsDetailed(q);
     res.json({ success: true, data: result });
+  } catch (e) {
+    next(e);
+  }
+}
+
+// =====================================================
+// Public — /api/v1/jobs/public (Phase 6 — Job Discovery)
+// Anonymous; authenticated users get extra visibility into their own jobs.
+// =====================================================
+export async function listPublicJobs(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const q = publicJobsQuerySchema.parse(req.query);
+    const result = await service.listPublicJobs(q);
+    res.json({ success: true, data: result });
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function getPublicJob(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const { id } = idParamSchema.parse(req.params);
+    // Try to read optional auth (don't require it)
+    const auth = (req as AuthedRequest).user;
+    const job = await service.getPublicJob(
+      id,
+      auth?.sub ?? null,
+      auth?.role ?? null,
+    );
+    res.json({ success: true, data: { job } });
   } catch (e) {
     next(e);
   }

@@ -7,6 +7,7 @@ import {
   jobCancelSchema,
   jobAttachmentCreateSchema,
   jobListQuerySchema,
+  publicJobsQuerySchema,
   idParamSchema,
 } from "./jobs.validators.js";
 import { requireAuth, requireRole } from "../../common/middlewares/auth.js";
@@ -63,4 +64,21 @@ adminRouter.get(
   controller.adminListJobs,
 );
 
-export { router as default, adminRouter };
+// =====================================================
+// Public — /api/v1/jobs/public (Phase 6 — Job Discovery)
+// Mounted SEPARATELY at /api/v1/jobs/public.
+// Public list + detail; richer filters than admin list.
+// =====================================================
+const publicRouter = Router();
+publicRouter.get(
+  "/",
+  validate({ query: publicJobsQuerySchema }),
+  controller.listPublicJobs,
+);
+publicRouter.get(
+  "/:id",
+  validate({ params: idParamSchema }),
+  controller.getPublicJob,
+);
+
+export { router as default, adminRouter, publicRouter };

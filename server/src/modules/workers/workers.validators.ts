@@ -58,6 +58,11 @@ export const workerListQuerySchema = z.object({
     .optional()
     .transform((v) => v === true || v === "true")
     .default(false),
+  categoryId: z.string().uuid().optional(),
+  categorySlug: z.string().trim().min(1).max(80).optional(),
+  subcategoryId: z.string().uuid().optional(),
+  maxHourlyRate: z.coerce.number().int().nonnegative().optional(),
+  minYearsExperience: z.coerce.number().int().min(0).max(70).optional(),
   sort: z
     .enum([
       "avgRating:desc",
@@ -65,6 +70,9 @@ export const workerListQuerySchema = z.object({
       "createdAt:desc",
       "createdAt:asc",
       "totalJobsCompleted:desc",
+      "hourlyRate:asc",
+      "hourlyRate:desc",
+      "yearsExperience:desc",
     ])
     .optional()
     .default("avgRating:desc"),

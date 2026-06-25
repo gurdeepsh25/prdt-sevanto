@@ -44,6 +44,9 @@ import type {
   JobAttachmentDTO,
   JobListQuery,
   AdminJobRow,
+  PublicJobCard,
+  PublicJobListResult,
+  PublicJobsQuery,
 } from "./types";
 
 /**
@@ -364,6 +367,13 @@ export class ApiClient {
     if (query.minRating !== undefined)
       params.set("minRating", String(query.minRating));
     if (query.verifiedOnly) params.set("verifiedOnly", "true");
+    if (query.categoryId) params.set("categoryId", query.categoryId);
+    if (query.categorySlug) params.set("categorySlug", query.categorySlug);
+    if (query.subcategoryId) params.set("subcategoryId", query.subcategoryId);
+    if (query.maxHourlyRate !== undefined)
+      params.set("maxHourlyRate", String(query.maxHourlyRate));
+    if (query.minYearsExperience !== undefined)
+      params.set("minYearsExperience", String(query.minYearsExperience));
     if (query.sort) params.set("sort", query.sort);
     const qs = params.toString();
     return this.request<PublicWorkerList>(
@@ -640,9 +650,7 @@ export class ApiClient {
   }
 
   // ---- Admin: jobs (read-only in Phase 5) ----
-  adminListJobs(
-    query: JobListQuery = {},
-  ): Promise<{
+  adminListJobs(query: JobListQuery = {}): Promise<{
     items: AdminJobRow[];
     total: number;
     page: number;
@@ -660,5 +668,36 @@ export class ApiClient {
       page: number;
       pageSize: number;
     }>(`/api/v1/admin/jobs${qs ? `?${qs}` : ""}`);
+  }
+
+  // =====================================================
+  // Phase 6 — Public Job Discovery
+  // =====================================================
+
+  listPublicJobs(query: PublicJobsQuery = {}): Promise<PublicJobListResult> {
+    const params = new URLSearchParams();
+    if (query.page) params.set("page", String(query.page));
+    if (query.pageSize) params.set("pageSize", String(query.pageSize));
+    if (query.categoryId) params.set("categoryId", query.categoryId);
+    if (query.subcategoryId) params.set("subcategoryId", query.subcategoryId);
+    if (query.categorySlug) params.set("categorySlug", query.categorySlug);
+    if (query.city) params.set("city", query.city);
+    if (query.urgency) params.set("urgency", query.urgency);
+    if (query.minBudget !== undefined)
+      params.set("minBudget", String(query.minBudget));
+    if (query.maxBudget !== undefined)
+      params.set("maxBudget", String(query.maxBudget));
+    if (query.scheduledAfter)
+      params.set("scheduledAfter", query.scheduledAfter);
+    if (query.search) params.set("search", query.search);
+    if (query.sort) params.set("sort", query.sort);
+    const qs = params.toString();
+    return this.request<PublicJobListResult>(
+      `/api/v1/jobs/public${qs ? `?${qs}` : ""}`,
+    );
+  }
+
+  getPublicJob(id: string): Promise<{ job: JobDetail }> {
+    return this.request<{ job: JobDetail }>(`/api/v1/jobs/public/${id}`);
   }
 }

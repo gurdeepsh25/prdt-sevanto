@@ -143,6 +143,52 @@ export const jobListQuerySchema = z.object({
     .default("createdAt:desc"),
 });
 
+// =====================================================
+// Public job feed (Phase 6 — Job Discovery)
+// Anonymous, returns OPEN jobs by default with rich filters.
+// =====================================================
+export const publicJobsQuerySchema = z
+  .object({
+    page: z.coerce.number().int().positive().optional().default(1),
+    pageSize: z.coerce
+      .number()
+      .int()
+      .positive()
+      .max(100)
+      .optional()
+      .default(20),
+    categoryId: z.string().uuid().optional(),
+    subcategoryId: z.string().uuid().optional(),
+    categorySlug: z.string().trim().min(1).max(80).optional(),
+    city: z.string().trim().min(1).max(80).optional(),
+    urgency: jobUrgencySchema.optional(),
+    minBudget: z.coerce.number().int().nonnegative().optional(),
+    maxBudget: z.coerce.number().int().nonnegative().optional(),
+    scheduledAfter: z.string().datetime().optional(),
+    search: z.string().trim().min(1).max(120).optional(),
+    sort: z
+      .enum([
+        "createdAt:desc",
+        "createdAt:asc",
+        "scheduledFor:asc",
+        "budgetMax:desc",
+        "budgetMax:asc",
+        "urgency:desc",
+      ])
+      .optional()
+      .default("createdAt:desc"),
+  })
+  .refine(
+    (d) =>
+      d.minBudget === undefined ||
+      d.maxBudget === undefined ||
+      d.minBudget <= d.maxBudget,
+    {
+      message: "minBudget must be ≤ maxBudget",
+      path: ["minBudget"],
+    },
+  );
+
 export const idParamSchema = z.object({ id: z.string().uuid() });
 
 // =====================================================
@@ -172,3 +218,4 @@ export type JobAttachmentCreateInput = z.infer<
   typeof jobAttachmentCreateSchema
 >;
 export type JobListQuery = z.infer<typeof jobListQuerySchema>;
+export type PublicJobsQuery = z.infer<typeof publicJobsQuerySchema>;

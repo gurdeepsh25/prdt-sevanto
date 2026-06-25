@@ -202,13 +202,21 @@ export interface PublicWorkerListQuery {
   skill?: string;
   minRating?: number;
   verifiedOnly?: boolean;
+  categoryId?: string;
+  categorySlug?: string;
+  subcategoryId?: string;
+  maxHourlyRate?: number;
+  minYearsExperience?: number;
   sort?:
     | "avgRating:desc"
     | "avgRating:asc"
     | "createdAt:desc"
     | "createdAt:asc"
     | "yearsExperience:desc"
-    | "yearsExperience:asc";
+    | "yearsExperience:asc"
+    | "hourlyRate:asc"
+    | "hourlyRate:desc"
+    | "totalJobsCompleted:desc";
 }
 
 export interface WorkerProfileCore {
@@ -505,4 +513,55 @@ export interface JobListQuery {
 export interface AdminJobRow extends JobSummary {
   customerName: string;
   customerEmail: string;
+}
+
+// =====================================================
+// Phase 6 — Public Job Discovery
+// =====================================================
+
+export interface PublicJobCard {
+  id: string;
+  title: string;
+  status: "OPEN";
+  urgency: JobUrgency;
+  city: string;
+  categoryId: string;
+  categoryName: string;
+  subcategoryId: string | null;
+  subcategoryName: string | null;
+  budgetMin: number | null;
+  budgetMax: number | null;
+  currency: string;
+  scheduledFor: string | null;
+  createdAt: string;
+  attachmentCount: number;
+  applicantCount: number;
+}
+
+export interface PublicJobListResult {
+  items: PublicJobCard[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface PublicJobsQuery {
+  page?: number;
+  pageSize?: number;
+  categoryId?: string;
+  subcategoryId?: string;
+  categorySlug?: string;
+  city?: string;
+  urgency?: JobUrgency;
+  minBudget?: number;
+  maxBudget?: number;
+  scheduledAfter?: string;
+  search?: string;
+  sort?:
+    | "createdAt:desc"
+    | "createdAt:asc"
+    | "scheduledFor:asc"
+    | "budgetMax:desc"
+    | "budgetMax:asc"
+    | "urgency:desc";
 }
